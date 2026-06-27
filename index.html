@@ -184,7 +184,6 @@
             sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Tracing vector intersection nodes...</p>';
 
             try {
-                // Call standard openstreetmap query pipeline natively from browser
                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
                     headers: { 'User-Agent': 'GluviasSpatialConsole/1.0' }
                 });
@@ -197,15 +196,20 @@
                 }
 
                 const location = data;
+                
+                // FORCE STRINGS INTO TRUE NUMERIC FLOATS BEFORE LEAFLET CALLS
                 const lat = parseFloat(location.lat);
                 const lon = parseFloat(location.lon);
 
+                if (isNaN(lat) || isNaN(lon)) {
+                    throw new Error("Coordinate extraction returned non-numeric matrix.");
+                }
+
                 logToTerminal(`Target locked. Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`);
 
-                // Fly map directly to the matched destination coordinates
+                // Map flight tracking loop execution
                 map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
 
-                // Refresh target coordinate placeholder marker pin
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
 
