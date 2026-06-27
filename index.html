@@ -109,7 +109,6 @@
         }
         .console-button:hover { background: #e11d48; }
 
-        /* Node Listing Framework */
         .node-list { list-style: none; padding: 0; margin: 8px 0 0 0; }
         .node-item {
             background: #050507;
@@ -167,7 +166,7 @@
             <div>
                 <h3 class="section-title">Spatial Target Control</h3>
                 <div class="search-block">
-                    <input type="text" id="targetQuery" class="console-input" placeholder="Search entity name or registry ID...">
+                    <input type="text" id="targetQuery" class="console-input" placeholder="Search entity name or registry ID..." onkeydown="if(event.key === 'Enter') executeRegistrySearch()">
                     <button onclick="executeRegistrySearch()" class="console-button">EXECUTE</button>
                 </div>
             </div>
@@ -202,7 +201,10 @@
         logToTerminal("Initializing Integrated Mapping Engine...");
         const map = L.map('map').setView([50.15, -5.07], 13);
 
+        // Standard OpenStreetMap base layer setup
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        
+        // National Library of Scotland historic tile stream mapping
         L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', { maxZoom: 18, opacity: 0.9 }).addTo(map);
         logToTerminal("NLS Maps linked seamlessly across workspace boundaries.");
 
@@ -220,6 +222,7 @@
 
                 if (!res.ok || !data.matches || data.matches.length === 0) {
                     container.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Zero search records matched target string context.</p>';
+                    logToTerminal("Query processed. Zero entity nodes returned.");
                     return;
                 }
 
@@ -240,6 +243,7 @@
                 logToTerminal(`Registry matrix synced. Found ${data.matches.length} matches.`);
             } catch (err) {
                 logToTerminal(`Search Failure: ${err.message}`);
+                container.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Execution error: ${err.message}</p>`;
             }
         }
 
