@@ -19,7 +19,6 @@
             flex-direction: column;
         }
         
-        /* Navigation Deck */
         .nav-deck { 
             display: flex; 
             align-items: center; 
@@ -47,7 +46,6 @@
             font-weight: bold; 
         }
 
-        /* Workspace Grid Split (Left map, Right workspace panel) */
         .workspace-container {
             display: flex;
             flex: 1;
@@ -81,8 +79,14 @@
             margin: 0;
         }
         
+        .search-block {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
         .console-input {
-            width: 100%;
+            flex: 1;
             background: #050507;
             border: 1px solid #27272a;
             color: #f4f4f5;
@@ -90,10 +94,51 @@
             font-family: monospace;
             font-size: 12px;
             outline: none;
+        }
+        
+        .console-button {
+            background: #8b1e1e;
+            color: #f4f4f5;
+            border: none;
+            padding: 0 16px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 11px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+        }
+        .console-button:hover { background: #e11d48; }
+
+        /* Node Listing Framework */
+        .node-list { list-style: none; padding: 0; margin: 8px 0 0 0; }
+        .node-item {
+            background: #050507;
+            border: 1px solid #27272a;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .node-item:hover { border-color: #e11d48; background: #0d0f14; }
+        .node-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            margin-top: 4px;
+            color: #71717a;
+        }
+
+        .briefing-viewport {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #e4e4e7;
+            white-space: pre-wrap;
+            background: #050507;
+            padding: 12px;
+            border-left: 2px solid #8b1e1e;
             margin-top: 8px;
         }
         
-        /* Debug Logger Base */
         .debug-panel {
             height: 120px;
             background: #000000;
@@ -112,7 +157,6 @@
 
     <div class="nav-deck">
         <span class="nav-item active">[SPATIAL MAPS //]</span>
-        <span class="nav-item">[LEGISLATION //]</span>
         <div class="session-anchor">Falmouth Core Session</div>
     </div>
 
@@ -122,19 +166,32 @@
         <div class="side-panel">
             <div>
                 <h3 class="section-title">Spatial Target Control</h3>
-                <input type="text" id="targetQuery" class="console-input" placeholder="Query location or database coordinates...">
+                <div class="search-block">
+                    <input type="text" id="targetQuery" class="console-input" placeholder="Search entity name or registry ID...">
+                    <button onclick="executeRegistrySearch()" class="console-button">EXECUTE</button>
+                </div>
             </div>
             <div>
                 <h3 class="section-title">Target Registry Nodes Found</h3>
-                <p style="font-size: 11px; color: #52525b; margin-top: 8px;">Awaiting active execution call trace...</p>
+                <div id="searchResults">
+                    <p style="font-size: 11px; color: #52525b; margin-top: 8px;">Awaiting active execution call trace...</p>
+                </div>
+            </div>
+            <div>
+                <h3 class="section-title">Intelligence Briefing Stream</h3>
+                <div id="briefingOutput" class="briefing-viewport">
+                    Awaiting target entity node activation toggle...
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="debugWindow" class="debug-panel">// Stutt Associates System Debug Logger online. Awaiting route tracking...</div>
+    <div id="debugWindow" class="debug-panel">// Stutt Associates System Debug Logger online. Awaiting system network tracking signals...</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        const API_BASE = window.location.origin;
+
         function logToTerminal(msg) {
             const logger = document.getElementById('debugWindow');
             const time = new Date().toISOString().split('T').slice(0, 8);
@@ -142,27 +199,68 @@
             logger.scrollTop = logger.scrollHeight;
         }
 
-        logToTerminal("Initializing Leaflet Engine Core...");
-
-        // Base Map setup anchored directly on Falmouth
+        logToTerminal("Initializing Integrated Mapping Engine...");
         const map = L.map('map').setView([50.15, -5.07], 13);
-        logToTerminal("Viewport locked coordinates to: Falmouth, Cornwall (50.15, -5.07)");
 
-        // 1. Modern OpenStreetMap Layer as a fallback background
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', { maxZoom: 18, opacity: 0.9 }).addTo(map);
+        logToTerminal("NLS Maps linked seamlessly across workspace boundaries.");
 
-        // 2. Active National Library of Scotland (NLS) Historical Great Britain Layer
-        // This is the correct, official high-speed XYZ tile endpoint
-        L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', {
-            attribution: 'Historical Maps courtesy of National Library of Scotland',
-            maxZoom: 18,
-            opacity: 0.9
-        }).addTo(map);
+        async function executeRegistrySearch() {
+            const query = document.getElementById('targetQuery').value.trim();
+            if (!query) return;
 
-        logToTerminal("NLS Historical map streams mapped across Great Britain successfully.");
+            logToTerminal(`Piping live registry call for target context: "${query}"`);
+            const container = document.getElementById('searchResults');
+            container.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Connecting to Companies House...</p>';
+
+            try {
+                const res = await fetch(`${API_BASE}/company-search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+
+                if (!res.ok || !data.matches || data.matches.length === 0) {
+                    container.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Zero search records matched target string context.</p>';
+                    return;
+                }
+
+                let html = '<ul class="node-list">';
+                data.matches.forEach(node => {
+                    html += `
+                        <li class="node-item" onclick="fetchDeepIntelligence('${node.company_number}')">
+                            <strong style="color: #f4f4f5; font-size: 12px;">${node.company_name}</strong>
+                            <div class="node-meta">
+                                <span>No: ${node.company_number}</span>
+                                <span style="color: #e11d48;">[${node.status.toUpperCase()}]</span>
+                            </div>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                container.innerHTML = html;
+                logToTerminal(`Registry matrix synced. Found ${data.matches.length} matches.`);
+            } catch (err) {
+                logToTerminal(`Search Failure: ${err.message}`);
+            }
+        }
+
+        async function fetchDeepIntelligence(compNum) {
+            logToTerminal(`Activating Stage 2 AI Profiler for Entity ID: #${compNum}`);
+            const output = document.getElementById('briefingOutput');
+            output.innerHTML = 'Compiling profiling layers... Querying Gemini Core protocol...';
+
+            try {
+                const res = await fetch(`${API_BASE}/company-intelligence?company_number=${compNum}`);
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.detail || 'API Pipeline internal failure.');
+
+                output.innerHTML = `<strong>${data.corporate_data.name}</strong>\n\n${data.authoritative_briefing}`;
+                logToTerminal("Sovereign analytical layer successfully updated.");
+            } catch (err) {
+                output.innerHTML = `<span style="color: #e11d48;">Analysis Interrupted: ${err.message}</span>`;
+                logToTerminal(`Stage 2 Interface Fault: ${err.message}`);
+            }
+        }
     </script>
 </body>
 </html>
