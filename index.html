@@ -187,27 +187,28 @@
                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
                     headers: { 'User-Agent': 'GluviasSpatialConsole/1.0' }
                 });
+                
+                if (!response.ok) throw new Error("Global map cluster network unavailable.");
                 const data = await response.json();
 
-                if (!data || data.length === 0) {
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">No coordinate nodes matched query context.</p>';
-                    logToTerminal(`Search failed. Target context unknown.`);
+                // STRICT ARRAY EXISTENCE INTERCEPT CATCH
+                if (!data || data.length === 0 || !data) {
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Zero search records matched target address query.</p>';
+                    logToTerminal(`Search failed. Target context "${query}" unknown to global directories.`);
                     return;
                 }
 
                 const location = data;
-                
-                // FORCE STRINGS INTO TRUE NUMERIC FLOATS BEFORE LEAFLET CALLS
                 const lat = parseFloat(location.lat);
                 const lon = parseFloat(location.lon);
 
                 if (isNaN(lat) || isNaN(lon)) {
-                    throw new Error("Coordinate extraction returned non-numeric matrix.");
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Error: Coordinates could not be verified.</p>';
+                    logToTerminal("Coordinate data read corrupt.");
+                    return;
                 }
 
                 logToTerminal(`Target locked. Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`);
-
-                // Map flight tracking loop execution
                 map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
 
                 if (activeMarker) map.removeLayer(activeMarker);
