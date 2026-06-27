@@ -4,25 +4,166 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GLUVIAS // INTELLIGENCE CORE</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { background-color: #050507; color: #a1a1aa; font-family: monospace; margin: 0; padding: 0; }
-        .nav-deck { display: flex; align-items: center; background: #0d0f14; border-bottom: 1px solid #8b1e1e; padding: 14px 24px; }
-        .nav-item { color: #71717a; margin-right: 28px; font-weight: bold; font-size: 13px; letter-spacing: 1px; cursor: pointer; }
+        * { box-sizing: border-box; }
+        body { 
+            background-color: #050507; 
+            color: #a1a1aa; 
+            font-family: monospace; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Navigation Deck */
+        .nav-deck { 
+            display: flex; 
+            align-items: center; 
+            background: #0d0f14; 
+            border-bottom: 1px solid #8b1e1e; 
+            padding: 14px 24px; 
+            height: 50px;
+        }
+        .nav-item { 
+            color: #71717a; 
+            margin-right: 28px; 
+            font-weight: bold; 
+            font-size: 13px; 
+            letter-spacing: 1px; 
+            cursor: pointer; 
+        }
         .nav-item.active { color: #e11d48; }
-        .console-wrapper { padding: 32px; }
-        .session-anchor { margin-left: auto; color: #e11d48; border: 1px solid #8b1e1e; padding: 4px 12px; font-size: 11px; text-transform: uppercase; font-weight: bold; }
-        #debugWindow { background: #000000; border-left: 3px solid #8b1e1e; padding: 16px; color: #f4f4f5; font-size: 12px; min-height: 120px; box-sizing: border-box; }
+        .session-anchor { 
+            margin-left: auto; 
+            color: #e11d48; 
+            border: 1px solid #8b1e1e; 
+            padding: 4px 12px; 
+            font-size: 11px; 
+            text-transform: uppercase; 
+            font-weight: bold; 
+        }
+
+        /* Workspace Grid Split (Left map, Right workspace panel) */
+        .workspace-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 170px); /* Leaves space for nav and debug logs */
+        }
+        
+        #map {
+            flex: 1.2;
+            height: 100%;
+            background: #050507;
+        }
+        
+        .side-panel {
+            flex: 0.8;
+            background: #0d0f14;
+            border-left: 1px solid #18181b;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #27272a;
+            padding-bottom: 6px;
+            margin: 0;
+        }
+        
+        .console-input {
+            width: 100%;
+            background: #050507;
+            border: 1px solid #27272a;
+            color: #f4f4f5;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            outline: none;
+            margin-top: 8px;
+        }
+        
+        /* Debug Logger Base */
+        .debug-panel {
+            height: 120px;
+            background: #000000;
+            border-top: 1px solid #27272a;
+            border-left: 3px solid #8b1e1e;
+            padding: 12px;
+            color: #f4f4f5;
+            font-size: 12px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
+
     <div class="nav-deck">
-        <span class="nav-item active">[LEGISLATION //]</span>
-        <span class="nav-item">[CASE LAW //]</span>
-        <span class="nav-item">[CPR //]</span>
-        <div class="session-anchor">Internal Session</div>
+        <span class="nav-item active">[SPATIAL MAPS //]</span>
+        <span class="nav-item">[LEGISLATION //]</span>
+        <div class="session-anchor">Falmouth Core Session</div>
     </div>
-    <div class="console-wrapper">
-        <div id="debugWindow">// Stutt Associates System Debug Logger online. Awaiting route tracking...</div>
+
+    <div class="workspace-container">
+        <div id="map"></div>
+        
+        <div class="side-panel">
+            <div>
+                <h3 class="section-title">Spatial Target Control</h3>
+                <input type="text" id="targetQuery" class="console-input" placeholder="Query location or database coordinates...">
+            </div>
+            <div>
+                <h3 class="section-title">Target Registry Nodes Found</h3>
+                <p style="font-size: 11px; color: #52525b; margin-top: 8px;">Awaiting active execution call trace...</p>
+            </div>
+        </div>
     </div>
+
+    <div id="debugWindow" class="debug-panel">// Stutt Associates System Debug Logger online. Awaiting route tracking...</div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Log initializing events directly into our custom screen tracker
+        function logToTerminal(msg) {
+            const logger = document.getElementById('debugWindow');
+            const time = new Date().toISOString().split('T').slice(0, 8);
+            logger.innerText += `\n${time} [SYSTEM SIGNAL] ${msg}`;
+            logger.scrollTop = logger.scrollHeight;
+        }
+
+        logToTerminal("Initializing Leaflet Engine Core...");
+
+        // Anchor map target coordinates directly over Falmouth, Cornwall at Zoom 13
+        const map = L.map('map').setView([50.15, -5.07], 13);
+        logToTerminal("Viewport locked coordinates to: Falmouth, Cornwall (50.15, -5.07)");
+
+        # Standard baseline open street maps for alignment fallback
+        const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Mount the National Library of Scotland Historical OS Map Tiles Engine
+        // This targets the comprehensive Great Britain coverage grid maps
+        const nlsLayer = L.tileLayer('https://nls-{s}.nls.uk/maps/os-baugh1920/{z}/{x}/{y}.png', {
+            subdomains: ['a', 'b', 'c'],
+            attribution: 'Historical Maps courtesy of National Library of Scotland',
+            maxZoom: 18,
+            opacity: 0.85
+        }).addTo(map);
+
+        logToTerminal("National Library of Scotland historical map layer injected and loaded.");
+    </script>
 </body>
 </html>
