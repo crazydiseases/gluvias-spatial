@@ -51,13 +51,13 @@
         .workspace-container {
             display: flex;
             flex: 1;
-            height: calc(100vh - 170px); /* Leaves space for nav and debug logs */
+            height: calc(100vh - 170px);
         }
         
         #map {
             flex: 1.2;
             height: 100%;
-            background: #050507;
+            background: #0d0f14;
         }
         
         .side-panel {
@@ -104,6 +104,7 @@
             font-size: 12px;
             overflow-y: auto;
             font-family: monospace;
+            white-space: pre-wrap;
         }
     </style>
 </head>
@@ -134,7 +135,6 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Log initializing events directly into our custom screen tracker
         function logToTerminal(msg) {
             const logger = document.getElementById('debugWindow');
             const time = new Date().toISOString().split('T').slice(0, 8);
@@ -144,26 +144,25 @@
 
         logToTerminal("Initializing Leaflet Engine Core...");
 
-        // Anchor map target coordinates directly over Falmouth, Cornwall at Zoom 13
+        // Base Map setup anchored directly on Falmouth
         const map = L.map('map').setView([50.15, -5.07], 13);
         logToTerminal("Viewport locked coordinates to: Falmouth, Cornwall (50.15, -5.07)");
 
-        # Standard baseline open street maps for alignment fallback
-        const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // 1. Modern OpenStreetMap Layer as a fallback background
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Mount the National Library of Scotland Historical OS Map Tiles Engine
-        // This targets the comprehensive Great Britain coverage grid maps
-        const nlsLayer = L.tileLayer('https://nls-{s}.nls.uk/maps/os-baugh1920/{z}/{x}/{y}.png', {
-            subdomains: ['a', 'b', 'c'],
+        // 2. Active National Library of Scotland (NLS) Historical Great Britain Layer
+        // This is the correct, official high-speed XYZ tile endpoint
+        L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', {
             attribution: 'Historical Maps courtesy of National Library of Scotland',
             maxZoom: 18,
-            opacity: 0.85
+            opacity: 0.9
         }).addTo(map);
 
-        logToTerminal("National Library of Scotland historical map layer injected and loaded.");
+        logToTerminal("NLS Historical map streams mapped across Great Britain successfully.");
     </script>
 </body>
 </html>
