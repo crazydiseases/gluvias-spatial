@@ -33,7 +33,6 @@
             font-weight: bold; 
             font-size: 13px; 
             letter-spacing: 1px; 
-            cursor: pointer; 
         }
         .nav-item.active { color: #e11d48; }
         .session-anchor { 
@@ -53,13 +52,13 @@
         }
         
         #map {
-            flex: 1.2;
+            flex: 1.3;
             height: 100%;
             background: #0d0f14;
         }
         
         .side-panel {
-            flex: 0.8;
+            flex: 0.7;
             background: #0d0f14;
             border-left: 1px solid #18181b;
             padding: 20px;
@@ -105,37 +104,16 @@
             font-weight: bold;
             font-size: 11px;
             cursor: pointer;
-            letter-spacing: 0.5px;
         }
         .console-button:hover { background: #e11d48; }
 
-        .node-list { list-style: none; padding: 0; margin: 8px 0 0 0; }
-        .node-item {
+        .location-card {
             background: #050507;
             border: 1px solid #27272a;
-            padding: 10px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .node-item:hover { border-color: #e11d48; background: #0d0f14; }
-        .node-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            margin-top: 4px;
-            color: #71717a;
-        }
-
-        .briefing-viewport {
-            font-size: 12px;
-            line-height: 1.5;
-            color: #e4e4e7;
-            white-space: pre-wrap;
-            background: #050507;
             padding: 12px;
-            border-left: 2px solid #8b1e1e;
             margin-top: 8px;
+            font-size: 12px;
+            line-height: 1.4;
         }
         
         .debug-panel {
@@ -156,7 +134,7 @@
 
     <div class="nav-deck">
         <span class="nav-item active">[SPATIAL MAPS //]</span>
-        <div class="session-anchor">Falmouth Core Session</div>
+        <div class="session-anchor">Geocoding Console Active</div>
     </div>
 
     <div class="workspace-container">
@@ -166,103 +144,81 @@
             <div>
                 <h3 class="section-title">Spatial Target Control</h3>
                 <div class="search-block">
-                    <input type="text" id="targetQuery" class="console-input" placeholder="Search entity name or registry ID..." onkeydown="if(event.key === 'Enter') executeRegistrySearch()">
-                    <button onclick="executeRegistrySearch()" class="console-button">EXECUTE</button>
+                    <input type="text" id="targetQuery" class="console-input" placeholder="Enter postcode, street, or city..." onkeydown="if(event.key === 'Enter') executeGeocodeSearch()">
+                    <button onclick="executeGeocodeSearch()" class="console-button">EXECUTE</button>
                 </div>
             </div>
             <div>
-                <h3 class="section-title">Target Registry Nodes Found</h3>
-                <div id="searchResults">
-                    <p style="font-size: 11px; color: #52525b; margin-top: 8px;">Awaiting active execution call trace...</p>
-                </div>
-            </div>
-            <div>
-                <h3 class="section-title">Intelligence Briefing Stream</h3>
-                <div id="briefingOutput" class="briefing-viewport">
-                    Awaiting target entity node activation toggle...
+                <h3 class="section-title">Active Route Telemetry</h3>
+                <div id="telemetryOutput">
+                    <p style="font-size: 11px; color: #52525b; margin-top: 8px;">Awaiting location deployment call...</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="debugWindow" class="debug-panel">// Stutt Associates System Debug Logger online. Awaiting system network tracking signals...</div>
+    <div id="debugWindow" class="debug-panel">// System Console Online. Target route vectors idle...</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const API_BASE = window.location.origin;
-
         function logToTerminal(msg) {
             const logger = document.getElementById('debugWindow');
             const time = new Date().toISOString().split('T').slice(0, 8);
-            logger.innerText += `\n${time} [SYSTEM SIGNAL] ${msg}`;
+            logger.innerText += `\n${time} [SPATIAL ENGINE] ${msg}`;
             logger.scrollTop = logger.scrollHeight;
         }
 
-        logToTerminal("Initializing Integrated Mapping Engine...");
+        logToTerminal("Waking map viewport matrices...");
         const map = L.map('map').setView([50.15, -5.07], 13);
+        let activeMarker = null;
 
-        // Standard OpenStreetMap base layer setup
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-        
-        // National Library of Scotland historic tile stream mapping
         L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', { maxZoom: 18, opacity: 0.9 }).addTo(map);
-        logToTerminal("NLS Maps linked seamlessly across workspace boundaries.");
 
-        async function executeRegistrySearch() {
+        async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
-            logToTerminal(`Piping live registry call for target context: "${query}"`);
-            const container = document.getElementById('searchResults');
-            container.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Connecting to Companies House...</p>';
+            logToTerminal(`Firing coordinate intercept trace for: "${query}"`);
+            const sidebar = document.getElementById('telemetryOutput');
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Tracing vector intersection nodes...</p>';
 
             try {
-                const res = await fetch(`${API_BASE}/company-search?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
+                // Call standard openstreetmap query pipeline natively from browser
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
+                    headers: { 'User-Agent': 'GluviasSpatialConsole/1.0' }
+                });
+                const data = await response.json();
 
-                if (!res.ok || !data.matches || data.matches.length === 0) {
-                    container.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Zero search records matched target string context.</p>';
-                    logToTerminal("Query processed. Zero entity nodes returned.");
+                if (!data || data.length === 0) {
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">No coordinate nodes matched query context.</p>';
+                    logToTerminal(`Search failed. Target context unknown.`);
                     return;
                 }
 
-                let html = '<ul class="node-list">';
-                data.matches.forEach(node => {
-                    html += `
-                        <li class="node-item" onclick="fetchDeepIntelligence('${node.company_number}')">
-                            <strong style="color: #f4f4f5; font-size: 12px;">${node.company_name}</strong>
-                            <div class="node-meta">
-                                <span>No: ${node.company_number}</span>
-                                <span style="color: #e11d48;">[${node.status.toUpperCase()}]</span>
-                            </div>
-                        </li>
-                    `;
-                });
-                html += '</ul>';
-                container.innerHTML = html;
-                logToTerminal(`Registry matrix synced. Found ${data.matches.length} matches.`);
+                const location = data;
+                const lat = parseFloat(location.lat);
+                const lon = parseFloat(location.lon);
+
+                logToTerminal(`Target locked. Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`);
+
+                // Fly map directly to the matched destination coordinates
+                map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
+
+                // Refresh target coordinate placeholder marker pin
+                if (activeMarker) map.removeLayer(activeMarker);
+                activeMarker = L.marker([lat, lon]).addTo(map);
+
+                sidebar.innerHTML = `
+                    <div class="location-card">
+                        <strong style="color: #e11d48; font-size: 11px;">[LOCKED TARGET NODE]</strong>
+                        <p style="margin: 6px 0; color: #f4f4f5;">${location.display_name}</p>
+                        <span style="color: #71717a; font-size: 11px;">Matrix: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                    </div>
+                `;
             } catch (err) {
-                logToTerminal(`Search Failure: ${err.message}`);
-                container.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Execution error: ${err.message}</p>`;
-            }
-        }
-
-        async function fetchDeepIntelligence(compNum) {
-            logToTerminal(`Activating Stage 2 AI Profiler for Entity ID: #${compNum}`);
-            const output = document.getElementById('briefingOutput');
-            output.innerHTML = 'Compiling profiling layers... Querying Gemini Core protocol...';
-
-            try {
-                const res = await fetch(`${API_BASE}/company-intelligence?company_number=${compNum}`);
-                const data = await res.json();
-
-                if (!res.ok) throw new Error(data.detail || 'API Pipeline internal failure.');
-
-                output.innerHTML = `<strong>${data.corporate_data.name}</strong>\n\n${data.authoritative_briefing}`;
-                logToTerminal("Sovereign analytical layer successfully updated.");
-            } catch (err) {
-                output.innerHTML = `<span style="color: #e11d48;">Analysis Interrupted: ${err.message}</span>`;
-                logToTerminal(`Stage 2 Interface Fault: ${err.message}`);
+                logToTerminal(`Telemetry pipeline trace failure: ${err.message}`);
+                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Error: ${err.message}</p>`;
             }
         }
     </script>
