@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v26.0</title>
+    <title>Spatial Intercept Core v28.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,14 +27,14 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v26</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v28</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
             <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Historical map archive array expanded.</p>
+            <p style="font-size: 11px; color: #71717a;">Complete NLS Archive array loaded into control deck.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -42,7 +42,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] V26 Historical Map Stack Operational.</div>
+        <div id="debugWindow">[SYSTEM READY] V28 Complete NLS Integration Online.</div>
     </div>
 
     <div id="map"></div>
@@ -68,20 +68,32 @@
             attribution: '© OpenStreetMap contributors'
         });
 
-        // --- 2. EXPANDED NLS HISTORICAL MAP STACK ---
-        // Victorian / Edwardian Era
-        const nlsVictorian = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+        // --- 2. COMPLETE PROVEN NLS HISTORICAL MAP STACK ---
+        const nlsMultiScale = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
             attribution: '© National Library of Scotland / MapTiler'
         });
 
-        // Interwar Era (1920s-1940s)
+        const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
+            attribution: '© National Library of Scotland / MapTiler'
+        });
+
+        const nlsHills = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1885/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
+            attribution: '© National Library of Scotland / MapTiler'
+        });
+
         const nlsInterwar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1919/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
             attribution: '© National Library of Scotland / MapTiler'
         });
 
-        // Post-War Era (1950s-1960s National Grid)
+        const nlsProvisional = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb25k1937/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
+            attribution: '© National Library of Scotland / MapTiler'
+        });
+
         const nlsPostWar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1955/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
             attribution: '© National Library of Scotland / MapTiler'
@@ -99,9 +111,12 @@
         // --- 4. LAYER INTERFACE CONTROL PANEL ---
         const baseMaps = {
             "Modern Street Map": modernOSM,
-            "NLS Victorian/Edwardian (1888-1913)": nlsVictorian,
+            "NLS 1900s Base (Multi-Scale)": nlsMultiScale,
+            "NLS Six-Inch (1888-1913)": nlsSixInch,
+            "NLS One-Inch Hills (1885-1903)": nlsHills,
             "NLS Interwar Series (1919-1947)": nlsInterwar,
-            "NLS Post-War Series (1955-1961)": nlsPostWar
+            "NLS Provisional 1:25k (1937-1961)": nlsProvisional,
+            "NLS Post-War Seventh Series (1955-1961)": nlsPostWar
         };
 
         L.control.layers(baseMaps, {}, { collapsed: false }).addTo(map);
@@ -149,7 +164,7 @@
                 }
 
                 logToTerminal(`SUCCESS: Formatted coords resolved: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                map.setView([lat, lon], 15);
+                map.setView([lat, lon], 14);
 
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
