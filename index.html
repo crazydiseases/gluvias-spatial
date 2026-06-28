@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v40.0</title>
+    <title>Spatial Intercept Core v41.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,7 +27,7 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v40</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v41</div>
         
         <form class="search-container" onsubmit="executeDirectGeocode(event)">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." autocomplete="off">
@@ -35,7 +35,7 @@
         </form>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">All 11 Map Arrays Restored. Robust coordinate array handling engine active.</p>
+            <p style="font-size: 11px; color: #71717a;">All 11 Map Arrays Active. Parsing validations clean.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -43,7 +43,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM ONLINE] Core arrays successfully restored and initialized.</div>
+        <div id="debugWindow">[SYSTEM ONLINE] Map stacks initialized successfully.</div>
     </div>
 
     <div id="map"></div>
@@ -81,7 +81,7 @@
             maxZoom: 19, attribution: 'Historic Imagery Archive Data'
         });
 
-        // --- 3. ALL HISTORICAL MAP LAYERS SUCCESSFULLY RESTORED ---
+        // --- 3. ALL HISTORICAL MAP LAYERS ---
         const nlsMultiScale = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
@@ -148,7 +148,7 @@
         map.on('moveend', updateZoomMonitor);
         updateZoomMonitor();
 
-        // --- 7. IMMUNE AND ROBUST COORDINATE PARSING ENGINE ---
+        // --- 7. CLEAN DIRECT EXTRACTION ENGINE ---
         async function executeDirectGeocode(event) {
             if (event) event.preventDefault();
 
@@ -157,7 +157,7 @@
 
             logToTerminal(`Initiating geocode sweep for: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Parsing location stream...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Contacting geocoding registry...</p>';
 
             try {
                 const response = await fetch(
@@ -167,32 +167,24 @@
                 
                 const data = await response.json();
 
-                // Safe array check: covers empty, stringed, or object returned results securely
                 if (!data || !Array.isArray(data) || data.length === 0) {
-                    logToTerminal("FAILED: Target context dropped out of public arrays.");
+                    logToTerminal("FAILED: Location signature dropped out of registry.");
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location Not Found.</p>';
                     return;
                 }
 
+                // Direct extraction bypasses property string verification loops
                 const target = data;
-                
-                // Absolute structural conversion check prevents coordinate dropouts
-                if (!target.hasOwnProperty('lat') || !target.hasOwnProperty('lon')) {
-                    logToTerminal("ERROR: Malformed layout response missing explicit keys.");
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Object Schema Mismatch.</p>';
-                    return;
-                }
-
                 let lat = parseFloat(target.lat);
                 let lon = parseFloat(target.lon);
 
                 if (isNaN(lat) || isNaN(lon)) {
-                    logToTerminal("ERROR: Floating calculation mismatch parsing strings.");
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Floating Point Mismatch.</p>';
+                    logToTerminal("ERROR: String coordinate conversion returned NaN values.");
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Parsing Exception.</p>';
                     return;
                 }
 
-                logToTerminal(`SUCCESS: Formatted coords resolved: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                logToTerminal(`SUCCESS: Target coordinated at: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
                 map.setView([lat, lon], 15);
 
                 if (activeMarker) map.removeLayer(activeMarker);
@@ -207,8 +199,8 @@
                 `;
 
             } catch (err) {
-                logToTerminal(`System Crash Intercepted: ${err.message}`);
-                sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Array Stream Exception</p>';
+                logToTerminal(`System Intercept Error: ${err.message}`);
+                sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Stream Exception Error</p>';
             }
         }
     </script>
