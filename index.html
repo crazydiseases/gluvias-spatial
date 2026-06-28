@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v14.0</title>
+    <title>Spatial Intercept Core v15.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -17,7 +17,11 @@
         input:focus { border-color: #e11d48; }
         button { background: #e11d48; color: white; border: none; padding: 8px 16px; font-size: 12px; cursor: pointer; font-weight: bold; }
         button:hover { background: #be123c; }
-        #telemetryOutput { flex-grow: 1; overflow-y: auto; background: #09090b; border: 1px solid #27272a; padding: 12px; margin-bottom: 16px; }
+        #telemetryOutput { flex-grow: 1; overflow-y: auto; background: #09090b; border: 1px solid #27272a; padding: 12px; margin-bottom: 8px; }
+        
+        /* LIVE MONITOR STYLING */
+        #zoomMonitor { background: #09090b; border: 1px solid #27272a; border-bottom: none; padding: 6px 12px; font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; }
+        
         #debugWindow { height: 120px; background: #000; border: 1px solid #27272a; padding: 8px; font-size: 10px; color: #22c55e; overflow-y: auto; white-space: pre-wrap; }
         .location-card { border-left: 2px solid #e11d48; padding-left: 8px; margin-bottom: 8px; }
         .leaflet-control-layers { background: #18181b !important; color: #f4f4f5 !important; border: 1px solid #27272a !important; font-family: monospace !important; font-size: 11px !important; }
@@ -26,15 +30,21 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT DIRECT v14</div>
+        <div class="deck-title">// SPATIAL INTERCEPT DIRECT v15</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
             <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Direct browser routing active. Proxy bypassed.</p>
+            <p style="font-size: 11px; color: #71717a;">Direct browser routing active. Telemetry stream ready.</p>
         </div>
-        <div id="debugWindow">[SYSTEM READY] V14 Direct Client Uplink Standby.</div>
+        
+        <div id="zoomMonitor">
+            <span style="color: #71717a;">MAP ZOOM TELEMETRY:</span>
+            <span id="zoomValue" style="color: #e11d48;">Z-LVL 14</span>
+        </div>
+        
+        <div id="debugWindow">[SYSTEM READY] V15 Live Telemetry Module Linked.</div>
     </div>
 
     <div id="map"></div>
@@ -51,7 +61,7 @@
 
         // =========================================================
         // INSERT YOUR MAPTILER API KEY IN THE QUOTES BELOW:
-        const MAPTILER_KEY = "PASTE_YOUR_MAPTILER_API_KEY_HERE";
+        const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
         // =========================================================
 
         // --- STABLE STANDARD OPENSTREETMAP BASE ---
@@ -100,29 +110,46 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // Map rendering watcher
+        // --- LIVE REAL-TIME TELEMETRY STREAM LOGIC ---
+        function updateZoomMonitor() {
+            const currentZoom = map.getZoom();
+            const zoomDisplay = document.getElementById('zoomValue');
+            
+            // Dynamically flag whether LR layers can load at this distance
+            if (currentZoom >= 16) {
+                zoomDisplay.innerHTML = `Z-LVL ${currentZoom} <span style="color: #22c55e; font-size: 9px;">[LR READY]</span>`;
+            } else {
+                zoomDisplay.innerHTML = `Z-LVL ${currentZoom} <span style="color: #e11d48; font-size: 9px;">[LR LOCKED]</span>`;
+            }
+        }
+
+        // Hook zoom updates directly to all viewport events
+        map.on('zoomend', updateZoomMonitor);
         map.on('moveend', function() {
+            updateZoomMonitor();
             if (map.hasLayer(landRegistryWMS) && map.getZoom() < 16) {
                 logToTerminal("NOTICE: Land Registry lines require Zoom Level 16+ to render.");
             }
         });
 
-        // --- FAILSAFE BROWSER DIRECT SEARCH ENGINE ---
+        // Run baseline setup update on compilation frame
+        updateZoomMonitor();
+
+        // --- DIRECT BROWSER SEARCH LOOP ---
         async function executeDirectGeocode() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
             logToTerminal(`Direct routing search request: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Contacting global spatial array...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Contacting spatial array...</p>';
 
             try {
-                // Queries the open public API directly to bypass python script errors
                 const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`);
                 const data = await response.json();
 
                 if (!data || data.length === 0) {
-                    logToTerminal("FAILED: Location drops out of global index entries.");
+                    logToTerminal("FAILED: Location drops out of index entries.");
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
                     return;
                 }
@@ -131,9 +158,9 @@
                 let lat = Number(target.lat);
                 let lon = Number(target.lon);
 
-                logToTerminal(`SUCCESS: Extracted coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                logToTerminal(`SUCCESS: Coords found: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
                 
-                // Set view straight to level 17 so property lines render instantly
+                // Jumps the window straight to Level 17 so everything updates instantly
                 map.setView([lat, lon], 17);
 
                 if (activeMarker) map.removeLayer(activeMarker);
