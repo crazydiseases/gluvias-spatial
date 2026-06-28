@@ -69,15 +69,15 @@
             attribution: '© OpenStreetMap contributors'
         });
 
-        // National Library of Scotland - Great Britain Historic OS (1920s-1940s)
-        const nlsHistoric = L.tileLayer('https://geo.nls.uk/maps/os/gb/{z}/{x}/{y}.png', {
+        // FIXED NLS TILE EXTENSION: Swapped to tileserver domain using .jpg configurations
+        const nlsHistoric = L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', {
+            minZoom: 1,
             maxZoom: 18,
             attribution: 'Historic Maps courtesy of National Library of Scotland',
-            opacity: 0.75  // Semi-transparent by default so you can see through to modern maps
+            opacity: 0.85
         });
 
         // --- MAP INITIALIZATION ---
-        // We initialize the map with the modern layer active
         const map = L.map('map', {
             center: [50.15, -5.07],
             zoom: 13,
@@ -87,11 +87,12 @@
         let activeMarker = null;
 
         // --- OVERLAY MAP LAYERS ---
-        // HM Land Registry INSPIRE Index Polygons WMS Feed
-        const landRegistry = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows', {
-            layers: 'INSPIRE_INDEX_POLYGONS',
+        // FIXED HMLR WMS CONTEXT: Added absolute path parameters and namespace registration
+        const landRegistry = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
+            layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
             transparent: true,
+            version: '1.3.0',
             attribution: 'Contains HM Land Registry data © Crown copyright',
             maxZoom: 19
         });
