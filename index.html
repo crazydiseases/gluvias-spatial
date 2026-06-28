@@ -81,12 +81,8 @@
                 
                 console.log("Raw Incoming Payload Shape:", data);
 
-                let target = data;
-                while (Array.isArray(target) && target.length > 0) {
-                    target = target;
-                }
-
-                console.log("Unpacked Object Target:", target);
+                // Safe array check without while-loops
+                let target = Array.isArray(data) ? data : data;
 
                 if (!target || typeof target !== 'object' || (!target.lat && !target.lon)) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
@@ -111,7 +107,7 @@
                     </div>
                 `;
             } catch (err) {
-                console.error("Extraction Processing Error:", err);
+                console.error("Extraction Error:", err);
                 logToTerminal(`Tunnel error caught: ${err.message}`);
                 sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
             }
