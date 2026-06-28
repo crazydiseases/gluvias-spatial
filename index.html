@@ -68,16 +68,19 @@
             maxZoom: 19, attribution: '© OpenStreetMap'
         });
 
-        const nlsPopular = L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS 1920-1940 OS', opacity: 0.85
+        // 1. NLS Six-Inch to the Mile (1888-1913) - Incredibly detailed street/building layer
+        const nlsSixInch = L.tileLayer('https://geo.nls.uk/maps/os/sixinch/gb/{z}/{x}/{y}.png', {
+            minZoom: 1, maxZoom: 18, attribution: 'NLS Historic Six-Inch (1888-1913)', opacity: 0.85
         });
 
+        // 2. NLS One-Inch to the Mile 7th Series (1950s-1960s) - Post-war era layout
+        const nlsPostWar = L.tileLayer('https://geo.nls.uk/maps/os/gb-one-inch-7th/{z}/{x}/{y}.png', {
+            minZoom: 1, maxZoom: 18, attribution: 'NLS OS 7th Series (1950-1960)', opacity: 0.85
+        });
+
+        // 3. NLS Bartholomew Great Britain (1900s) - Alternative regional styling
         const nlsBartholomew = L.tileLayer('https://geo.nls.uk/maps/bartholomew/gb/{z}/{x}/{y}.png', {
             minZoom: 1, maxZoom: 18, attribution: 'NLS Bartholomew 1900s', opacity: 0.85
-        });
-
-        const nlsPostWar = L.tileLayer('https://geo.nls.uk/maps/os/gb-one-inch-7th/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS OS 1950-1960', opacity: 0.85
         });
 
         // --- MAP INITIALIZATION ---
