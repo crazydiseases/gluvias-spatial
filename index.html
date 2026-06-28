@@ -82,21 +82,14 @@
 
                 let target = Array.isArray(data) ? data : data;
 
-                if (!target) {
+                if (!target || (!target.lat && !target.lon)) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
                     logToTerminal("Trace complete. Target context unmatched.");
                     return;
                 }
 
-                // STRICT FLOAT ENFORCEMENT TO SATISFY LEAFLET RULES
                 let lat = Number(target.lat);
                 let lon = Number(target.lon);
-
-                if (isNaN(lat) || isNaN(lon)) {
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Payload coordinates unresolved.</p>';
-                    logToTerminal("Anomalous object formatting inside target payload directory.");
-                    return;
-                }
 
                 logToTerminal(`Coordinates resolved. Fixed on target: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
                 map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
