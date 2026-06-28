@@ -76,7 +76,7 @@
             sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting telemetry points...</p>';
 
             try {
-                const response = await fetch(`/api/v2/locate?q=${encodeURIComponent(query)}&_nocache=${Date.now()}`);
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_nocache=${Date.now()}`);
                 const rawText = await response.text();
                 
                 console.log("Raw Server Output Body:", rawText);
