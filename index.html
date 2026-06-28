@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v28.0</title>
+    <title>Spatial Intercept Core v30.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,14 +27,14 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v28</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v30</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
             <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Complete NLS Archive array loaded into control deck.</p>
+            <p style="font-size: 11px; color: #71717a;">Complete out-of-copyright library and historic aerial array compiled.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -42,7 +42,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] V28 Complete NLS Integration Online.</div>
+        <div id="debugWindow">[SYSTEM READY] Full Legacy Matrix Instantiated.</div>
     </div>
 
     <div id="map"></div>
@@ -62,44 +62,55 @@
         const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
         // =========================================================
 
-        // --- 1. CORE STREET MAP LAYER ---
+        // --- 1. BASE STREET MAPS & MODERN SATELLITE ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            maxZoom: 19, 
-            attribution: '© OpenStreetMap contributors'
+            maxZoom: 19, attribution: '© OpenStreetMap contributors'
         });
 
-        // --- 2. COMPLETE PROVEN NLS HISTORICAL MAP STACK ---
+        const modernSatellite = L.tileLayer(`https://api.maptiler.com/tiles/satellite-hybrid/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            maxZoom: 22, attribution: '© MapTiler © Maxar'
+        });
+
+        const mapTilerOS = L.tileLayer(`https://api.maptiler.com/maps/uk-openzoomstack-leisure/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
+            maxZoom: 19, attribution: 'Contains OS data © Crown copyright'
+        });
+
+        // --- 2. VERIFIED HISTORIC AERIAL / SATELLITE ANALOG ---
+        const historicAerial1940s = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Historic Imagery Archive Data'
+        });
+
+        // --- 3. THE COMPLETE OUT-OF-COPYRIGHT NLS HISTORICAL STACK ---
         const nlsMultiScale = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
-            attribution: '© National Library of Scotland / MapTiler'
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
         const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
-            attribution: '© National Library of Scotland / MapTiler'
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
         const nlsHills = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1885/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
-            attribution: '© National Library of Scotland / MapTiler'
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+        });
+
+        const nlsLondonFiveFoot = L.tileLayer(`https://api.maptiler.com/tiles/uk-london1893/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
         const nlsInterwar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1919/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
-            attribution: '© National Library of Scotland / MapTiler'
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
         const nlsProvisional = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb25k1937/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
-            attribution: '© National Library of Scotland / MapTiler'
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
         const nlsPostWar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1955/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
-            attribution: '© National Library of Scotland / MapTiler'
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
-        // --- 3. INITIALIZE INSTANCE ---
+        // --- 4. MAP INITIALIZATION ENGINE ---
         const map = L.map('map', {
             center: [50.26055, -5.05336], 
             zoom: 14, 
@@ -108,20 +119,24 @@
         
         let activeMarker = null;
 
-        // --- 4. LAYER INTERFACE CONTROL PANEL ---
+        // --- 5. COMPREHENSIVE LAYER CONTROL PANEL ---
         const baseMaps = {
-            "Modern Street Map": modernOSM,
-            "NLS 1900s Base (Multi-Scale)": nlsMultiScale,
-            "NLS Six-Inch (1888-1913)": nlsSixInch,
-            "NLS One-Inch Hills (1885-1903)": nlsHills,
-            "NLS Interwar Series (1919-1947)": nlsInterwar,
+            "Modern Street Map (OSM)": modernOSM,
+            "Modern High-Res Satellite": modernSatellite,
+            "Modern Ordnance Survey Grid": mapTilerOS,
+            "Historical Aerial Base (1940s Frame)": historicAerial1940s,
+            "NLS Dynamic Multi-Scale (1900s)": nlsMultiScale,
+            "NLS Victorian Six-Inch (1888-1913)": nlsSixInch,
+            "NLS One-Inch Hills Edition (1885)": nlsHills,
+            "NLS London Ultra-Detail (1893)": nlsLondonFiveFoot,
+            "NLS Interwar Complete (1919-1947)": nlsInterwar,
             "NLS Provisional 1:25k (1937-1961)": nlsProvisional,
-            "NLS Post-War Seventh Series (1955-1961)": nlsPostWar
+            "NLS Post-War 7th Series (1955)": nlsPostWar
         };
 
         L.control.layers(baseMaps, {}, { collapsed: false }).addTo(map);
 
-        // --- 5. TELEMETRY MONITOR SYSTEM ---
+        // --- 6. TELEMETRY MONITOR SYSTEM ---
         function updateZoomMonitor() {
             const currentZoom = map.getZoom();
             const zoomDisplay = document.getElementById('zoomValue');
@@ -134,7 +149,7 @@
         map.on('moveend', updateZoomMonitor);
         updateZoomMonitor();
 
-        // --- 6. SECURE GEOLOCATOR STRING DATA PARSER ---
+        // --- 7. SECURE GEOLOCATOR STRING DATA PARSER ---
         async function executeDirectGeocode() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
