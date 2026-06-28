@@ -86,13 +86,14 @@
                     parsedData = JSON.parse(parsedData);
                 }
 
-                // THE FIX: Unpack the array layer properly by specifying index
                 let target = parsedData;
-                if (Array.isArray(target) && target.length > 0) {
-                    target = target;
+                
+                // If the data arrived as a list, we shift the first item out
+                if (typeof target.shift === 'function') {
+                    target = target.shift();
                 }
-                if (Array.isArray(target) && target.length > 0) {
-                    target = target; 
+                if (target && typeof target.shift === 'function') {
+                    target = target.shift();
                 }
 
                 console.log("Strict Extracted Target Node:", target);
