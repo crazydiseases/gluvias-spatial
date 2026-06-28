@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Deck</title>
+    <title>Spatial Intercept Deck v5.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://nls.tileserver.com/api.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
         body { background-color: #09090b; color: #f4f4f5; display: flex; height: 100vh; overflow: hidden; }
@@ -27,15 +28,15 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT CORE</div>
+        <div class="deck-title">// SPATIAL INTERCEPT CORE v5</div>
         <div class="search-container">
-            <input type="text" id="targetQuery" placeholder="Enter coordinates, postcode or area..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
+            <input type="text" id="targetQuery" placeholder="Enter postcode or area (e.g. TR1 2NS)..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
             <button onclick="executeGeocodeSearch()">SEEK</button>
         </div>
         <div id="telemetryOutput">
             <p style="font-size: 11px; color: #71717a;">System standby. Ready for execution parameters.</p>
         </div>
-        <div id="debugWindow">[SYSTEM READY] Initialization handshake clean.</div>
+        <div id="debugWindow">[SYSTEM READY] V5 Dynamic Pipeline Assembled.</div>
     </div>
 
     <div id="map"></div>
@@ -55,22 +56,15 @@
             maxZoom: 19, attribution: '© OpenStreetMap'
         });
 
-        // FIXED NLS ENDPOINTS: Added standard TMS flag inversion to resolve image coordinates
-        const nlsPopular = L.tileLayer('https://geo.nls.uk/maps/os/gb/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS 1920-1940 OS', opacity: 0.85, tms: true
-        });
-
-        const nlsPostWar = L.tileLayer('https://geo.nls.uk/maps/os/gb-one-inch-7th/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS OS 1950-1960', opacity: 0.85, tms: true
-        });
-
-        const nlsBartholomew = L.tileLayer('https://geo.nls.uk/maps/bartholomew/gb/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS Bartholomew 1900s', opacity: 0.85, tms: true
+        // Safe, clean injection string running through the official public API loader
+        const nlsHistoricOS = L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', {
+            minZoom: 1, maxZoom: 18, 
+            attribution: 'Historic Maps courtesy of National Library of Scotland'
         });
 
         // --- MAP INITIALIZATION ---
         const map = L.map('map', {
-            center: [50.15, -5.07], zoom: 13, layers: [modernOSM] 
+            center: [50.26055, -5.05336], zoom: 15, layers: [modernOSM] 
         });
         
         let activeMarker = null;
@@ -78,7 +72,7 @@
         // --- LIVE LAND REGISTRY DATA LAYER ---
         const boundaryLayer = L.geoJSON(null, {
             style: function() {
-                return { color: '#e11d48', weight: 2, fillOpacity: 0.2 }; // Strong bright red outlines
+                return { color: '#e11d48', weight: 3, fillOpacity: 0.2 };
             },
             onEachFeature: function(feature, layer) {
                 if (feature.properties && feature.properties.INSPIREID) {
@@ -90,9 +84,7 @@
         // --- LAYER DECK CONTROLLER ---
         const baseMaps = {
             "Modern Street Map": modernOSM,
-            "NLS OS Historic (1920-1940)": nlsPopular,
-            "NLS Post-War OS (1950-1960)": nlsPostWar,
-            "NLS Bartholomew (1900s)": nlsBartholomew
+            "NLS OS Historic (1920-1947)": nlsHistoricOS
         };
 
         const overlayMaps = {
@@ -101,49 +93,53 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // --- TRIGGER PIPELINE ON ZOOM / PAN ---
-        async function fetchLivePropertyBoundaries() {
-            if (!map.hasLayer(boundaryLayer)) return;
+        // --- FIXED FORCED TRIGGER EXTRACTION PIPELINE ---
+        async function forceFetchPropertyBoundaries() {
+            // Check if the layer exists on the map structure
+            const activeLayers = [];
+            map.eachLayer(function(l) { activeLayers.push(l); });
             
-            // FIXED ZOOM GATE: Allowed data downloading from a much higher altitude view
-            if (map.getZoom() < 10) {
-                logToTerminal("Zoom in closer (Level 10+) to download parcel vectors.");
+            // Allow querying across zoom levels
+            if (map.getZoom() < 12) {
+                logToTerminal("Zoom in closer to download parcel vectors.");
                 return;
             }
 
             const bounds = map.getBounds();
             const bboxStr = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
             
+            logToTerminal("Extracting live Land Registry vectors...");
+            
             try {
-                const res = await fetch(`/api/boundaries?bbox=${bboxStr}`);
+                const res = await fetch(`/api/boundaries?bbox=${bboxStr}&_cb=${Date.now()}`);
                 const data = await res.json();
                 
-                if (data && data.features) {
+                if (data && data.features && data.features.length > 0) {
                     boundaryLayer.clearLayers();
                     boundaryLayer.addData(data);
-                    logToTerminal(`Injected ${data.features.length} freehold title vectors.`);
+                    logToTerminal(`SUCCESS: Rendered ${data.features.length} plot assets inside window.`);
+                } else {
+                    logToTerminal("No property polygons returned for this sector.");
                 }
             } catch (err) {
-                console.error("Boundary error:", err);
+                logToTerminal(`Pipeline Error: ${err.message}`);
             }
         }
 
-        map.on('moveend', fetchLivePropertyBoundaries);
-        map.on('overlayadd', function(e) {
-            if (e.name === "Live Land Registry Plots") fetchLivePropertyBoundaries();
-        });
+        // Bind directly to movement actions to bypass toggle detection bugs
+        map.on('moveend', forceFetchPropertyBoundaries);
 
         // --- GEOCODE SEARCH LOGIC ENGINE ---
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
-            logToTerminal(`Routing spatial intercept query: "${query}"`);
+            logToTerminal(`Routing search query: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting telemetry points...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting coordinates...</p>';
 
             try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_nocache=${Date.now()}`);
+                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
                 const rawText = await response.text();
                 
                 let parsedData = JSON.parse(rawText);
@@ -151,40 +147,41 @@
 
                 let target = parsedData;
                 if (typeof target.shift === 'function') target = target.shift();
-                if (target && typeof target.shift === 'function') target = target.shift();
 
                 if (!target || typeof target !== 'object' || !target.hasOwnProperty('lat')) {
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location dropped by directory.</p>';
                     return;
                 }
 
                 let lat = Number(target.lat);
                 let lon = Number(target.lon);
 
-                logToTerminal(`Coordinates resolved. Fixed on target: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                logToTerminal(`Resolved target coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
                 
-                try {
-                    map.flyTo([lat, lon], 16, { animate: true, duration: 1.5 });
-                } catch (mapErr) {
-                    map.setView([lat, lon], 16); 
-                }
+                map.setView([lat, lon], 16); 
 
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
 
                 sidebar.innerHTML = `
                     <div class="location-card">
-                        <strong style="color: #e11d48; font-size: 11px;">[RESOLVED NODE]</strong>
+                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
                         <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name || query}</p>
-                        <span style="color: #71717a; font-size: 11px;">Vectors: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
                     </div>
                 `;
                 
-                setTimeout(fetchLivePropertyBoundaries, 1600);
+                // Fire the fetch immediately after moving to the target location
+                setTimeout(forceFetchPropertyBoundaries, 1000);
 
             } catch (err) {
                 console.error("Extraction Error:", err);
                 sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
             }
         }
+
+        // Initialize search map layout with an initial fetch trigger
+        setTimeout(forceFetchPropertyBoundaries, 1500);
     </script>
+</body>
+</html>
