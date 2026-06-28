@@ -63,6 +63,7 @@
             }
         }
 
+        // Standard Leaflet Initialization
         const map = L.map('map').setView([50.15, -5.07], 13);
         let activeMarker = null;
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
@@ -77,26 +78,34 @@
 
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_nocache=${Date.now()}`);
-                const data = await response.json();
+                const rawText = await response.text();
                 
-                console.log("Processing Data Payload:", data);
+                console.log("Raw Server Output Body:", rawText);
 
-                // DIRECT STRUCTURAL EXTRACTION
+                // Multi-tier Fallback Parser
+                let parsedData;
+                try {
+                    parsedData = JSON.parse(rawText);
+                    if (typeof parsedData === 'string') {
+                        parsedData = JSON.parse(parsedData);
+                    }
+                } catch (e) {
+                    console.error("Internal Parse Warning:", e);
+                    parsedData = null;
+                }
+
+                // Isolate target object safely
                 let target = null;
-                
-                if (data && typeof data === 'object') {
-                    if (Array.isArray(data) && data.length > 0) {
-                        target = data;
-                    } else if (data !== undefined) {
-                        target = data; // Backup for array-like structures
-                    } else {
-                        target = data; // Direct object fallback
+                if (parsedData) {
+                    if (Array.isArray(parsedData) && parsedData.length > 0) {
+                        target = parsedData;
+                    } else if (typeof parsedData === 'object') {
+                        target = parsedData;
                     }
                 }
 
-                console.log("Resolved Target Element:", target);
+                console.log("Isolated Target Processing Node:", target);
 
-                // Direct property checking on the isolated item
                 if (!target || (!target.lat && !target.lon)) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
                     logToTerminal("Trace complete. Target context unmatched.");
@@ -115,4 +124,16 @@
                 sidebar.innerHTML = `
                     <div class="location-card">
                         <strong style="color: #e11d48; font-size: 11px;">[RESOLVED NODE]</strong>
-                        <p style="margin: 6px 0; color: #f4f4f5;">${target.
+                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name || query}</p>
+                        <span style="color: #71717a; font-size: 11px;">Vectors: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                    </div>
+                `;
+            } catch (err) {
+                console.error("Global Catch Error:", err);
+                logToTerminal(`Tunnel error caught: ${err.message}`);
+                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
