@@ -52,7 +52,6 @@
 
     <div id="debugWindow" class="debug-panel">// System Core Online. Standing by for vector sweep...</div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         function logToTerminal(msg) {
             const logger = document.getElementById('debugWindow');
@@ -79,8 +78,17 @@
 
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
-                const data = await response.json();
-                console.log("Raw Server Data:", data);
+                let rawData = await response.text(); // Read raw string stream
+                
+                console.log("Raw Response String:", rawData);
+                
+                // Force evaluation into a clean JavaScript array/object
+                let data = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+                
+                // Secondary check for double-stringified objects from FastAPI proxies
+                if (typeof data === 'string') {
+                    data = JSON.parse(data);
+                }
 
                 if (data && data.error) throw new Error(data.error);
 
@@ -115,7 +123,7 @@
             }
         }
 
-        // Attach listeners safely via modern JS properties instead of dirty HTML attributes
+        // Attach event listeners safely
         document.getElementById('execBtn').addEventListener('click', executeGeocodeSearch);
         document.getElementById('targetQuery').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') executeGeocodeSearch();
