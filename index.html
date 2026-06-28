@@ -63,10 +63,54 @@
             }
         }
 
-        const map = L.map('map').setView([50.15, -5.07], 13);
-        let activeMarker = null;
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        // --- BASE MAP LAYERS ---
+        const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        });
 
+        // National Library of Scotland - Great Britain Historic OS (1920s-1940s)
+        const nlsHistoric = L.tileLayer('https://geo.nls.uk/maps/os/gb/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Historic Maps courtesy of National Library of Scotland',
+            opacity: 0.75  // Semi-transparent by default so you can see through to modern maps
+        });
+
+        // --- MAP INITIALIZATION ---
+        // We initialize the map with the modern layer active
+        const map = L.map('map', {
+            center: [50.15, -5.07],
+            zoom: 13,
+            layers: [modernOSM] 
+        });
+        
+        let activeMarker = null;
+
+        // --- OVERLAY MAP LAYERS ---
+        // HM Land Registry INSPIRE Index Polygons WMS Feed
+        const landRegistry = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows', {
+            layers: 'INSPIRE_INDEX_POLYGONS',
+            format: 'image/png',
+            transparent: true,
+            attribution: 'Contains HM Land Registry data © Crown copyright',
+            maxZoom: 19
+        });
+
+        // --- LAYER DECK CONTROLLER ---
+        const baseMaps = {
+            "Modern Street Map": modernOSM,
+            "NLS Historic OS (1920-1940)": nlsHistoric
+        };
+
+        const overlayMaps = {
+            "HM Land Registry Property Boundaries": landRegistry
+        };
+
+        // Adds the clean control dashboard menu to the upper right corner
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+
+        // --- GEOCODE LOGIC ENGINE ---
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
@@ -87,8 +131,6 @@
                 }
 
                 let target = parsedData;
-                
-                // If the data arrived as a list, we shift the first item out
                 if (typeof target.shift === 'function') {
                     target = target.shift();
                 }
@@ -98,7 +140,6 @@
 
                 console.log("Strict Extracted Target Node:", target);
 
-                // Check attributes on the clean object item directly
                 if (!target || typeof target !== 'object' || !target.hasOwnProperty('lat')) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
                     logToTerminal("Trace complete. Target context unmatched.");
@@ -111,9 +152,9 @@
                 logToTerminal(`Coordinates resolved. Fixed on target: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
                 
                 try {
-                    map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
+                    map.flyTo([lat, lon], 16, { animate: true, duration: 1.5 }); // Zoomed closer to see plot lines
                 } catch (mapErr) {
-                    map.setView([lat, lon], 14); 
+                    map.setView([lat, lon], 16); 
                 }
 
                 if (activeMarker) map.removeLayer(activeMarker);
