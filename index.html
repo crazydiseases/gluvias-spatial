@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v25.0</title>
+    <title>Spatial Intercept Core v26.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,14 +27,14 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v25</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v26</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
             <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Map initialization success. Grid engine responsive.</p>
+            <p style="font-size: 11px; color: #71717a;">Historical map archive array expanded.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -42,7 +42,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] V25 Layout Normalized.</div>
+        <div id="debugWindow">[SYSTEM READY] V26 Historical Map Stack Operational.</div>
     </div>
 
     <div id="map"></div>
@@ -62,23 +62,32 @@
         const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
         // =========================================================
 
-        // --- 1. CORE STREET MAP LAYERS ---
+        // --- 1. CORE STREET MAP LAYER ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
             maxZoom: 19, 
             attribution: '© OpenStreetMap contributors'
         });
 
-        // Fixed NLS format rules to prevent crashing standard canvas layouts
-        const nlsHistoric = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, 
-            maxZoom: 18, 
-            tileSize: 512, 
-            zoomOffset: -1, 
-            crossOrigin: true,
+        // --- 2. EXPANDED NLS HISTORICAL MAP STACK ---
+        // Victorian / Edwardian Era
+        const nlsVictorian = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
             attribution: '© National Library of Scotland / MapTiler'
         });
 
-        // --- 2. INITIALIZE INSTANCE ---
+        // Interwar Era (1920s-1940s)
+        const nlsInterwar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1919/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
+            attribution: '© National Library of Scotland / MapTiler'
+        });
+
+        // Post-War Era (1950s-1960s National Grid)
+        const nlsPostWar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1955/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true,
+            attribution: '© National Library of Scotland / MapTiler'
+        });
+
+        // --- 3. INITIALIZE INSTANCE ---
         const map = L.map('map', {
             center: [50.26055, -5.05336], 
             zoom: 14, 
@@ -87,51 +96,27 @@
         
         let activeMarker = null;
 
-        // --- 3. LIVE LAND REGISTRY OVERLAY ---
-        const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
-            layers: 'inspire:INSPIRE_INDEX_POLYGONS',
-            format: 'image/png',
-            transparent: true,
-            version: '1.3.0',
-            crs: L.CRS.EPSG3857, 
-            attribution: 'Contains HM Land Registry data © Crown copyright',
-            maxZoom: 22,
-            opacity: 0.65
-        }).addTo(map);
-
         // --- 4. LAYER INTERFACE CONTROL PANEL ---
         const baseMaps = {
-            "Modern Base Map (OSM)": modernOSM,
-            "NLS Historic Maps (1888-1913)": nlsHistoric
+            "Modern Street Map": modernOSM,
+            "NLS Victorian/Edwardian (1888-1913)": nlsVictorian,
+            "NLS Interwar Series (1919-1947)": nlsInterwar,
+            "NLS Post-War Series (1955-1961)": nlsPostWar
         };
 
-        const overlayMaps = {
-            "Live Land Registry Plots": landRegistryWMS
-        };
-
-        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+        L.control.layers(baseMaps, {}, { collapsed: false }).addTo(map);
 
         // --- 5. TELEMETRY MONITOR SYSTEM ---
         function updateZoomMonitor() {
             const currentZoom = map.getZoom();
             const zoomDisplay = document.getElementById('zoomValue');
-            if (!zoomDisplay) return;
-            
-            if (currentZoom >= 16) {
-                zoomDisplay.innerHTML = `Z-LVL ${currentZoom} <span style="color: #22c55e; font-size: 9px;">[LR READY]</span>`;
-            } else {
-                zoomDisplay.innerHTML = `Z-LVL ${currentZoom} <span style="color: #e11d48; font-size: 9px;">[LR LOCKED]</span>`;
+            if (zoomDisplay) {
+                zoomDisplay.innerHTML = `Z-LVL ${currentZoom}`;
             }
         }
 
         map.on('zoomend', updateZoomMonitor);
-        map.on('moveend', function() {
-            updateZoomMonitor();
-            if (map.hasLayer(landRegistryWMS) && map.getZoom() < 16) {
-                logToTerminal("NOTICE: Land Registry lines require Zoom Level 16+ to render.");
-            }
-        });
-
+        map.on('moveend', updateZoomMonitor);
         updateZoomMonitor();
 
         // --- 6. SECURE GEOLOCATOR STRING DATA PARSER ---
@@ -164,7 +149,7 @@
                 }
 
                 logToTerminal(`SUCCESS: Formatted coords resolved: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                map.setView([lat, lon], 17);
+                map.setView([lat, lon], 15);
 
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
