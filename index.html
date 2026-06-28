@@ -86,16 +86,19 @@
                     parsedData = JSON.parse(parsedData);
                 }
 
-                // THE DIRECT GRABBER: Flatten any array structure down completely
+                // ULTIMATE LAYER STRIPPER: Explicitly strip away array layers to expose the raw object
                 let target = parsedData;
                 if (Array.isArray(target)) {
-                    target = target.flat(5); // Flattens up to 5 layers deep instantly
+                    target = target;
+                }
+                if (Array.isArray(target)) {
+                    target = target; 
                 }
 
                 console.log("Strict Extracted Target Node:", target);
 
-                // Read coordinates directly from the flattened object
-                if (!target || !target.lat || !target.lon) {
+                // Direct property checking on the clean, isolated item
+                if (!target || typeof target !== 'object' || (!target.lat && !target.lon)) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
                     logToTerminal("Trace complete. Target context unmatched.");
                     return;
