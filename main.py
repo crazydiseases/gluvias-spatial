@@ -1,8 +1,40 @@
 import os
-import uvicorn
-from backend.main import app
+import httpx
+from pathlib import Path
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
-if __name__ == "__main__":
-    # Pull the dynamic port from Railway's environment, defaulting to 8000 locally
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+app = FastAPI(title="GLUVIAS // SPATIAL CONSOLE")
+
+# Point to index.html in the root directory
+BASE_DIR = Path(__file__).resolve().parent
+HTML_PATH = BASE_DIR / "index.html"
+
+@app.get("/")
+async def serve_workspace():
+    if HTML_PATH.exists():
+        return FileResponse(str(HTML_PATH))
+    return {"error": "File not found"}
+
+@app.get("/api/search")
+async def proxy_geocode(q: str):
+    headers = {
+        "User-Agent": "GluviasSpatialConsoleEngine/8.0 (stuttassociates@internal.com)"
+    }
+    
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={
+                    "format": "json",
+                    "q": q.strip(),
+                    "limit": 1,
+                    "addressdetails": 1
+                },
+                headers=headers
+            )
+            # Natively return the JSON object/array so it isn't double-stringified
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
