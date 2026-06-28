@@ -1,12 +1,11 @@
 import os
 import httpx
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.responses import FileResponse
 
 app = FastAPI(title="GLUVIAS // SPATIAL CONSOLE")
 
-# Point to index.html in the root directory
 BASE_DIR = Path(__file__).resolve().parent
 HTML_PATH = BASE_DIR / "index.html"
 
@@ -19,7 +18,7 @@ async def serve_workspace():
 @app.get("/api/search")
 async def proxy_geocode(q: str):
     headers = {
-        "User-Agent": "GluviasSpatialConsoleEngine/8.0 (stuttassociates@internal.com)"
+        "User-Agent": "GluviasSpatialConsoleEngine/9.0 (stuttassociates@internal.com)"
     }
     
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -34,7 +33,18 @@ async def proxy_geocode(q: str):
                 },
                 headers=headers
             )
-            # Natively return the JSON object/array so it isn't double-stringified
-            return response.json()
+            
+            # BYPASS ALL SERIALIZATION: Grab the raw string/bytes directly from the source
+            # and send them untouched with a strict JSON content type header.
+            return Response(
+                content=response.text, 
+                media_type="application/json",
+                status_code=response.status_code
+            )
+            
         except Exception as e:
-            return {"error": str(e)}
+            return Response(
+                content=f'{{"error": "{str(e)}"}}', 
+                media_type="application/json", 
+                status_code=500
+            )
