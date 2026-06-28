@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v33.0</title>
+    <title>Spatial Intercept Core v34.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,7 +27,7 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v33</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v34</div>
         
         <form class="search-container" onsubmit="executeDirectGeocode(event)">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." autocomplete="off">
@@ -35,7 +35,7 @@
         </form>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Tracking vectors aligned. Zoom limits optimized.</p>
+            <p style="font-size: 11px; color: #71717a;">Tile extensions corrected. Regional boundary limits verified.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -43,7 +43,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] V33 Zoom Limits Synced.</div>
+        <div id="debugWindow">[SYSTEM READY] v34 Patch Arrays Compiled.</div>
     </div>
 
     <div id="map"></div>
@@ -81,25 +81,25 @@
             maxZoom: 19, attribution: 'Historic Imagery Archive Data'
         });
 
-        // --- 3. COMPLETE NLS HISTORICAL STACK ---
+        // --- 3. FIX: NLS HISTORICAL STACK WITH EXPLICIT EXTENSIONS & ACCURATE ZOOM MARGINS ---
         const nlsMultiScale = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
         const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 5, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+            minZoom: 6, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
-        const nlsHills = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1885/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+        const nlsHills = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1885/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
-        const nlsLondonFiveFoot = L.tileLayer(`https://api.maptiler.com/tiles/uk-london1893/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 5, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+        const nlsLondonFiveFoot = L.tileLayer(`https://api.maptiler.com/tiles/uk-oslondon1k1893/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 6, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
         const nlsInterwar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1919/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 5, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+            minZoom: 6, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
         const nlsProvisional = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb25k1937/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
@@ -163,7 +163,7 @@
             try {
                 const response = await fetch(
                     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`,
-                    { headers: { 'User-Agent': 'SpatialInterceptAppv33' } }
+                    { headers: { 'User-Agent': 'SpatialInterceptAppv34' } }
                 );
                 
                 const data = await response.json();
@@ -186,8 +186,8 @@
 
                 logToTerminal(`SUCCESS: Formatted coords resolved: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
                 
-                // FIXED: Snaps map directly to Level 16 so the detailed tile configurations load instantly
-                map.setView([lat, lon], 16);
+                // Adjust base target zoom view to step smoothly into regional scales
+                map.setView([lat, lon], 15);
 
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
