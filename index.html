@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historical Intercept Deck v12.0</title>
+    <title>Spatial Intercept Core v13.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -26,15 +26,15 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT CORE v12</div>
+        <div class="deck-title">// SPATIAL INTERCEPT BASECORE v13</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
             <button onclick="executeGeocodeSearch()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">System core reverted to baseline alignment. Awaiting search parameters.</p>
+            <p style="font-size: 11px; color: #71717a;">Core base map restored. System ready.</p>
         </div>
-        <div id="debugWindow">[SYSTEM READY] V12 Stable Baseline Online.</div>
+        <div id="debugWindow">[SYSTEM READY] V13 Base Restoration Complete.</div>
     </div>
 
     <div id="map"></div>
@@ -54,12 +54,12 @@
         const MAPTILER_KEY = "PASTE_YOUR_MAPTILER_API_KEY_HERE";
         // =========================================================
 
-        // --- MODERN OSM STARTUP BASE ---
+        // --- RELIABLE FALLBACK STANDARD BASEMAP ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            maxZoom: 19, attribution: '© OpenStreetMap volunteers'
+            maxZoom: 19, attribution: '© OpenStreetMap contributors'
         });
 
-        // --- AUTHENTIC HISTORICAL NLS DATA CHANNELS ---
+        // --- HISTORICAL AND ALTERNATIVE TILES LINKED BY KEY ---
         const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire10k1900/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
@@ -68,14 +68,14 @@
             minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
 
-        // --- INITIALIZE MAP CONTAINER WITH MODERN BASE ---
+        // --- INITIALIZE MAP ON THE WORKING BASE LAYER ---
         const map = L.map('map', {
             center: [50.26055, -5.05336], zoom: 14, layers: [modernOSM] 
         });
         
         let activeMarker = null;
 
-        // --- DYNAMIC HM LAND REGISTRY WMS (PROJECTION STABLE) ---
+        // --- HM LAND REGISTRY WMS (STABLE ATTRIBUTES) ---
         const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
             layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
@@ -87,10 +87,10 @@
             opacity: 0.65
         }).addTo(map);
 
-        // --- CONTROL DECKS ARRAY ---
+        // --- SIMPLIFIED RE-ALIGNMENT LAYER CONTROLLER ---
         const baseMaps = {
-            "Modern Street Map Reference": modernOSM,
-            "NLS Historic Detailed Six-Inch (1888-1913)": nlsSixInch,
+            "Modern Base Map (Standard)": modernOSM,
+            "NLS Historic Six-Inch (1888-1913)": nlsSixInch,
             "NLS Post-War One-Inch (1955-1961)": nlsPostWar
         };
 
@@ -100,24 +100,64 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // Track layers and zoom constraints
+        // Map monitor loop
         map.on('moveend', function() {
             if (map.hasLayer(landRegistryWMS) && map.getZoom() < 16) {
                 logToTerminal("NOTICE: Land Registry lines require Zoom Level 16+ to render.");
             }
         });
 
-        // --- STRING-SAFE UNPACKING SEARCH PARSER ---
+        // --- RE-BUILT FAILSAFE SEARCH LOOP ---
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
-            logToTerminal(`Routing search query: "${query}"`);
+            logToTerminal(`Searching directory for: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting rows...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Processing data blocks...</p>';
 
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
                 let rawData = await response.json();
                 
-                // Unpack multi-serialized backend string structures cleanly
+                // Deep clean raw serialization errors natively
+                while (typeof rawData === 'string') {
+                    if (rawData.startsWith('"') && rawData.endsWith('"')) {
+                        rawData = rawData.slice(1, -1);
+                    }
+                    rawData = JSON.parse(rawData);
+                }
+
+                let target = Array.isArray(rawData) ? rawData : rawData;
+
+                if (!target || (!target.lat && !target.latitude)) {
+                    logToTerminal("ERROR: Backend structure returned invalid lat/lon arrays.");
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
+                    return;
+                }
+
+                let lat = Number(target.lat || target.latitude);
+                let lon = Number(target.lon || target.longitude);
+
+                logToTerminal(`SUCCESS: Extracted coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                map.setView([lat, lon], 17);
+
+                if (activeMarker) map.removeLayer(activeMarker);
+                activeMarker = L.marker([lat, lon]).addTo(map);
+
+                sidebar.innerHTML = `
+                    <div class="location-card">
+                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
+                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name || query}</p>
+                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                    </div>
+                `;
+
+            } catch (err) {
+                logToTerminal(`Parsing Exception: ${err.message}`);
+                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
