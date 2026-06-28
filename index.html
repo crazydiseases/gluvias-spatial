@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Deck v5.0</title>
+    <title>Historical Intercept Deck v7.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://nls.tileserver.com/api.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
         body { background-color: #09090b; color: #f4f4f5; display: flex; height: 100vh; overflow: hidden; }
@@ -22,21 +21,20 @@
         #debugWindow { height: 120px; background: #000; border: 1px solid #27272a; padding: 8px; font-size: 10px; color: #22c55e; overflow-y: auto; white-space: pre-wrap; }
         .location-card { border-left: 2px solid #e11d48; padding-left: 8px; margin-bottom: 8px; }
         .leaflet-control-layers { background: #18181b !important; color: #f4f4f5 !important; border: 1px solid #27272a !important; font-family: monospace !important; font-size: 11px !important; }
-        .leaflet-control-layers-toggle { background-color: #27272a !important; }
     </style>
 </head>
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT CORE v5</div>
+        <div class="deck-title">// HISTORICAL INTERCEPT DECK</div>
         <div class="search-container">
-            <input type="text" id="targetQuery" placeholder="Enter postcode or area (e.g. TR1 2NS)..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
+            <input type="text" id="targetQuery" placeholder="Enter postcode (e.g. TR1 2NS)..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
             <button onclick="executeGeocodeSearch()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">System standby. Ready for execution parameters.</p>
+            <p style="font-size: 11px; color: #71717a;">Paste your MapTiler API Key into line 52 of index.html to activate the historical dataset.</p>
         </div>
-        <div id="debugWindow">[SYSTEM READY] V5 Dynamic Pipeline Assembled.</div>
+        <div id="debugWindow">[SYSTEM READY] Key-ready environment online.</div>
     </div>
 
     <div id="map"></div>
@@ -46,142 +44,101 @@
             const logger = document.getElementById('debugWindow');
             if (logger) {
                 const time = new Date().toISOString().split('T').slice(0, 8);
-                logger.innerText += `\n${time} [TUNNEL CORE] ${msg}`;
+                logger.innerText += `\n${time} [DECK] ${msg}`;
                 logger.scrollTop = logger.scrollHeight;
             }
         }
 
-        // --- BASE MAP LAYERS ---
+        // =========================================================
+        // INSERT YOUR MAPTILER API KEY IN THE QUOTES BELOW:
+        const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
+        // =========================================================
+
+        // --- AUTHENTIC NLS HISTORICAL ARRAYS ---
+        // 1. The Gold Standard: Six-inch to the mile (1888-1913) showing precise property limits
+        const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire10k1900/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
+        });
+
+        // 2. The Post-War Seventh Series (1955-1961)
+        const nlsPostWar = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire63k1955/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
+        });
+
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
             maxZoom: 19, attribution: '© OpenStreetMap'
         });
 
-        // Safe, clean injection string running through the official public API loader
-        const nlsHistoricOS = L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', {
-            minZoom: 1, maxZoom: 18, 
-            attribution: 'Historic Maps courtesy of National Library of Scotland'
-        });
-
         // --- MAP INITIALIZATION ---
+        // Defaults directly onto the genuine historical layout first
         const map = L.map('map', {
-            center: [50.26055, -5.05336], zoom: 15, layers: [modernOSM] 
+            center: [50.26055, -5.05336], zoom: 16, layers: [nlsSixInch] 
         });
         
         let activeMarker = null;
 
-        // --- LIVE LAND REGISTRY DATA LAYER ---
-        const boundaryLayer = L.geoJSON(null, {
-            style: function() {
-                return { color: '#e11d48', weight: 3, fillOpacity: 0.2 };
-            },
-            onEachFeature: function(feature, layer) {
-                if (feature.properties && feature.properties.INSPIREID) {
-                    layer.bindPopup(`<strong>Land Registry ID:</strong> ${feature.properties.INSPIREID}`);
-                }
-            }
+        // --- REAL-TIME LAND REGISTRY PLOTS (EPSG:3857 ALIGNED) ---
+        const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
+            layers: 'inspire:INSPIRE_INDEX_POLYGONS',
+            format: 'image/png',
+            transparent: true,
+            version: '1.3.0',
+            crs: L.CRS.EPSG3857,
+            attribution: 'Contains HM Land Registry data © Crown copyright',
+            maxZoom: 22,
+            opacity: 0.6
         }).addTo(map);
 
-        // --- LAYER DECK CONTROLLER ---
+        // --- LAYER CONTROLLERS ---
         const baseMaps = {
-            "Modern Street Map": modernOSM,
-            "NLS OS Historic (1920-1947)": nlsHistoricOS
+            "NLS Historic Detailed Six-Inch (1888-1913)": nlsSixInch,
+            "NLS Post-War One-Inch (1955-1961)": nlsPostWar,
+            "Modern Street Map Reference": modernOSM
         };
 
         const overlayMaps = {
-            "Live Land Registry Plots": boundaryLayer
+            "Live Land Registry Plots": landRegistryWMS
         };
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // --- FIXED FORCED TRIGGER EXTRACTION PIPELINE ---
-        async function forceFetchPropertyBoundaries() {
-            // Check if the layer exists on the map structure
-            const activeLayers = [];
-            map.eachLayer(function(l) { activeLayers.push(l); });
-            
-            // Allow querying across zoom levels
-            if (map.getZoom() < 12) {
-                logToTerminal("Zoom in closer to download parcel vectors.");
-                return;
-            }
-
-            const bounds = map.getBounds();
-            const bboxStr = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
-            
-            logToTerminal("Extracting live Land Registry vectors...");
-            
-            try {
-                const res = await fetch(`/api/boundaries?bbox=${bboxStr}&_cb=${Date.now()}`);
-                const data = await res.json();
-                
-                if (data && data.features && data.features.length > 0) {
-                    boundaryLayer.clearLayers();
-                    boundaryLayer.addData(data);
-                    logToTerminal(`SUCCESS: Rendered ${data.features.length} plot assets inside window.`);
-                } else {
-                    logToTerminal("No property polygons returned for this sector.");
-                }
-            } catch (err) {
-                logToTerminal(`Pipeline Error: ${err.message}`);
-            }
-        }
-
-        // Bind directly to movement actions to bypass toggle detection bugs
-        map.on('moveend', forceFetchPropertyBoundaries);
-
-        // --- GEOCODE SEARCH LOGIC ENGINE ---
+        // --- SEARCH ENGINE ---
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
-            logToTerminal(`Routing search query: "${query}"`);
+            logToTerminal(`Seeking: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting coordinates...</p>';
 
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
-                const rawText = await response.text();
-                
-                let parsedData = JSON.parse(rawText);
-                if (typeof parsedData === 'string') parsedData = JSON.parse(parsedData);
+                const data = await response.json();
+                let target = Array.isArray(data) ? data : data;
 
-                let target = parsedData;
-                if (typeof target.shift === 'function') target = target.shift();
-
-                if (!target || typeof target !== 'object' || !target.hasOwnProperty('lat')) {
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location dropped by directory.</p>';
+                if (!target || !target.lat) {
+                    sidebar.innerHTML = '<p style="color: #e11d48;">Target lost.</p>';
                     return;
                 }
 
                 let lat = Number(target.lat);
                 let lon = Number(target.lon);
 
-                logToTerminal(`Resolved target coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                
-                map.setView([lat, lon], 16); 
+                logToTerminal(`Coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                map.setView([lat, lon], 17);
 
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
 
                 sidebar.innerHTML = `
                     <div class="location-card">
-                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
+                        <strong style="color: #e11d48; font-size: 11px;">[ARCHIVE RECORD RESOLVED]</strong>
                         <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name || query}</p>
-                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
                     </div>
                 `;
-                
-                // Fire the fetch immediately after moving to the target location
-                setTimeout(forceFetchPropertyBoundaries, 1000);
-
             } catch (err) {
-                console.error("Extraction Error:", err);
-                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
+                logToTerminal("System Exception.");
             }
         }
-
-        // Initialize search map layout with an initial fetch trigger
-        setTimeout(forceFetchPropertyBoundaries, 1500);
     </script>
 </body>
 </html>
