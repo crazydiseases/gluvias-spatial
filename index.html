@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v22.0</title>
+    <title>Spatial Intercept Core v25.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,13 +27,14 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v22</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v25</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
             <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
+        
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Map core initialized. Checking API endpoints...</p>
+            <p style="font-size: 11px; color: #71717a;">Map initialization success. Grid engine responsive.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -41,7 +42,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] V22 Production Compilation Online.</div>
+        <div id="debugWindow">[SYSTEM READY] V25 Layout Normalized.</div>
     </div>
 
     <div id="map"></div>
@@ -61,14 +62,20 @@
         const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
         // =========================================================
 
-        // --- 1. BASE MAPS ---
+        // --- 1. CORE STREET MAP LAYERS ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            maxZoom: 19, attribution: '© OpenStreetMap contributors'
+            maxZoom: 19, 
+            attribution: '© OpenStreetMap contributors'
         });
 
-        // VERIFIED: Re-mapped to authentic MapTiler cloud production layer paths
-        const nlsHistoric = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
+        // Fixed NLS format rules to prevent crashing standard canvas layouts
+        const nlsHistoric = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, 
+            maxZoom: 18, 
+            tileSize: 512, 
+            zoomOffset: -1, 
+            crossOrigin: true,
+            attribution: '© National Library of Scotland / MapTiler'
         });
 
         // --- 2. INITIALIZE INSTANCE ---
@@ -80,7 +87,7 @@
         
         let activeMarker = null;
 
-        // --- 3. LIVE LAND REGISTRY WMS OVERLAY ---
+        // --- 3. LIVE LAND REGISTRY OVERLAY ---
         const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
             layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
@@ -92,7 +99,7 @@
             opacity: 0.65
         }).addTo(map);
 
-        // --- 4. CONTROL DISPLAY SELECTION ---
+        // --- 4. LAYER INTERFACE CONTROL PANEL ---
         const baseMaps = {
             "Modern Base Map (OSM)": modernOSM,
             "NLS Historic Maps (1888-1913)": nlsHistoric
@@ -127,7 +134,7 @@
 
         updateZoomMonitor();
 
-        // --- 6. SECURE GEOLOCATION STRING DATA PARSER ---
+        // --- 6. SECURE GEOLOCATOR STRING DATA PARSER ---
         async function executeDirectGeocode() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
@@ -137,4 +144,44 @@
             sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Processing array payload...</p>';
 
             try {
-                const response = await fetch(`https
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    logToTerminal("FAILED: Target location context dropped out of index.");
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
+                    return;
+                }
+
+                const target = data;
+                let lat = parseFloat(target.lat);
+                let lon = parseFloat(target.lon);
+
+                if (isNaN(lat) || isNaN(lon)) {
+                    logToTerminal("ERROR: Geocoder parsed an empty float coordinate object.");
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Parsing Float Exception.</p>';
+                    return;
+                }
+
+                logToTerminal(`SUCCESS: Formatted coords resolved: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                map.setView([lat, lon], 17);
+
+                if (activeMarker) map.removeLayer(activeMarker);
+                activeMarker = L.marker([lat, lon]).addTo(map);
+
+                sidebar.innerHTML = `
+                    <div class="location-card">
+                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
+                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name}</p>
+                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                    </div>
+                `;
+
+            } catch (err) {
+                logToTerminal(`Direct Search Exception: ${err.message}`);
+                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
