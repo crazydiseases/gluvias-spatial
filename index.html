@@ -86,7 +86,6 @@
                     parsedData = JSON.parse(parsedData);
                 }
 
-                // ULTIMATE LAYER STRIPPER: Explicitly strip away array layers to expose the raw object
                 let target = parsedData;
                 if (Array.isArray(target)) {
                     target = target;
@@ -97,8 +96,8 @@
 
                 console.log("Strict Extracted Target Node:", target);
 
-                // Direct property checking on the clean, isolated item
-                if (!target || typeof target !== 'object' || (!target.lat && !target.lon)) {
+                // DIRECT ATTRIBUTE CHECK: Eliminate complex logical gating conditions
+                if (!target || !target.hasOwnProperty('lat')) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
                     logToTerminal("Trace complete. Target context unmatched.");
                     return;
@@ -108,7 +107,13 @@
                 let lon = Number(target.lon);
 
                 logToTerminal(`Coordinates resolved. Fixed on target: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
+                
+                // RENDER FALLBACK GATING
+                try {
+                    map.flyTo([lat, lon], 14, { animate: true, duration: 1.5 });
+                } catch (mapErr) {
+                    map.setView([lat, lon], 14); // Immediate structural render fallback if animation fails
+                }
 
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
