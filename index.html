@@ -3,56 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GLUVIAS // INTELLIGENCE CORE</title>
+    <title>Spatial Intercept Deck</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { background-color: #050507; color: #a1a1aa; font-family: monospace; margin: 0; padding: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
-        .nav-deck { display: flex; align-items: center; background: #0d0f14; border-bottom: 1px solid #8b1e1e; padding: 14px 24px; height: 50px; }
-        .nav-item { color: #71717a; font-weight: bold; font-size: 13px; letter-spacing: 1px; }
-        .nav-item.active { color: #e11d48; }
-        .session-anchor { margin-left: auto; color: #e11d48; border: 1px solid #8b1e1e; padding: 4px 12px; font-size: 11px; text-transform: uppercase; font-weight: bold; }
-        .workspace-container { display: flex; flex: 1; height: calc(100vh - 170px); }
-        #map { flex: 1.3; height: 100%; background: #0d0f14; }
-        .side-panel { flex: 0.7; background: #0d0f14; border-left: 1px solid #18181b; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-        .section-title { font-size: 11px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #27272a; padding-bottom: 6px; margin: 0; }
-        .search-block { display: flex; gap: 8px; margin-top: 8px; }
-        .console-input { flex: 1; background: #050507; border: 1px solid #27272a; color: #f4f4f5; padding: 10px; font-family: monospace; font-size: 12px; outline: none; }
-        .console-button { background: #8b1e1e; color: #f4f4f5; border: none; padding: 0 16px; font-family: monospace; font-weight: bold; font-size: 11px; cursor: pointer; }
-        .console-button:hover { background: #e11d48; }
-        .location-card { background: #050507; border: 1px solid #27272a; padding: 12px; margin-top: 8px; font-size: 12px; line-height: 1.4; }
-        .debug-panel { height: 120px; background: #000000; border-top: 1px solid #27272a; border-left: 3px solid #8b1e1e; padding: 12px; color: #f4f4f5; font-size: 12px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
+        body { background-color: #09090b; color: #f4f4f5; display: flex; height: 100vh; overflow: hidden; }
+        #controlDeck { width: 360px; background-color: #18181b; border-right: 1px solid #27272a; display: flex; flex-direction: column; padding: 16px; }
+        #map { flex-grow: 1; height: 100%; background: #09090b; }
+        .deck-title { font-size: 14px; font-weight: bold; color: #e11d48; margin-bottom: 12px; letter-spacing: 1px; }
+        .search-container { display: flex; gap: 8px; margin-bottom: 16px; }
+        input { flex-grow: 1; background: #09090b; border: 1px solid #27272a; padding: 8px; color: #f4f4f5; font-size: 12px; outline: none; }
+        input:focus { border-color: #e11d48; }
+        button { background: #e11d48; color: white; border: none; padding: 8px 16px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #be123c; }
+        #telemetryOutput { flex-grow: 1; overflow-y: auto; background: #09090b; border: 1px solid #27272a; padding: 12px; margin-bottom: 16px; }
+        #debugWindow { height: 120px; background: #000; border: 1px solid #27272a; padding: 8px; font-size: 10px; color: #22c55e; overflow-y: auto; white-space: pre-wrap; }
+        .location-card { border-left: 2px solid #e11d48; padding-left: 8px; margin-bottom: 8px; }
+        .leaflet-control-layers { background: #18181b !important; color: #f4f4f5 !important; border: 1px solid #27272a !important; font-family: monospace !important; font-size: 11px !important; }
+        .leaflet-control-layers-toggle { background-color: #27272a !important; }
     </style>
 </head>
 <body>
 
-    <div class="nav-deck">
-        <span class="nav-item active">[SPATIAL MAPS //]</span>
-        <div class="session-anchor">Telemetry Active</div>
-    </div>
-
-    <div class="workspace-container">
-        <div id="map"></div>
-        <div class="side-panel">
-            <div>
-                <h3 class="section-title">Spatial Target Control</h3>
-                <div class="search-block">
-                    <input type="text" id="targetQuery" class="console-input" placeholder="Enter postcode or place name..." onkeydown="if(event.key === 'Enter') executeGeocodeSearch()">
-                    <button onclick="executeGeocodeSearch()" class="console-button">EXECUTE</button>
-                </div>
-            </div>
-            <div>
-                <h3 class="section-title">Active Route Telemetry</h3>
-                <div id="telemetryOutput">
-                    <p style="font-size: 11px; color: #52525b; margin-top: 8px;">Awaiting location deployment call...</p>
-                </div>
-            </div>
+    <div id="controlDeck">
+        <div class="deck-title">// SPATIAL INTERCEPT CORE</div>
+        <div class="search-container">
+            <input type="text" id="targetQuery" placeholder="Enter coordinates, postcode or area..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
+            <button onclick="executeGeocodeSearch()">SEEK</button>
         </div>
+        <div id="telemetryOutput">
+            <p style="font-size: 11px; color: #71717a;">System standby. Ready for execution parameters.</p>
+        </div>
+        <div id="debugWindow">[SYSTEM READY] Initialization handshake clean.</div>
     </div>
 
-    <div id="debugWindow" class="debug-panel">// System Core Online. Standing by for vector sweep...</div>
+    <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         function logToTerminal(msg) {
             const logger = document.getElementById('debugWindow');
@@ -68,17 +55,15 @@
             maxZoom: 19, attribution: '© OpenStreetMap'
         });
 
-        // 1. NLS Six-Inch to the Mile (1888-1913) - Incredibly detailed street/building layer
-        const nlsSixInch = L.tileLayer('https://geo.nls.uk/maps/os/sixinch/gb/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS Historic Six-Inch (1888-1913)', opacity: 0.85
+        // Direct paths through NLS Amazon servers - no third-party watermarks
+        const nlsPopular = L.tileLayer('https://geo.nls.uk/maps/os/gb/{z}/{x}/{y}.png', {
+            minZoom: 1, maxZoom: 18, attribution: 'NLS 1920-1940 OS', opacity: 0.85
         });
 
-        // 2. NLS One-Inch to the Mile 7th Series (1950s-1960s) - Post-war era layout
         const nlsPostWar = L.tileLayer('https://geo.nls.uk/maps/os/gb-one-inch-7th/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS OS 7th Series (1950-1960)', opacity: 0.85
+            minZoom: 1, maxZoom: 18, attribution: 'NLS OS 1950-1960', opacity: 0.85
         });
 
-        // 3. NLS Bartholomew Great Britain (1900s) - Alternative regional styling
         const nlsBartholomew = L.tileLayer('https://geo.nls.uk/maps/bartholomew/gb/{z}/{x}/{y}.png', {
             minZoom: 1, maxZoom: 18, attribution: 'NLS Bartholomew 1900s', opacity: 0.85
         });
@@ -91,10 +76,9 @@
         let activeMarker = null;
 
         // --- LIVE LAND REGISTRY DATA LAYER ---
-        // We build a dynamic GeoJSON layer to hold real property polygon frames
         const boundaryLayer = L.geoJSON(null, {
             style: function() {
-                return { color: '#e11d48', weight: 2, fillOpacity: 0.15 }; // Red vector lines like MapSearch
+                return { color: '#e11d48', weight: 2, fillOpacity: 0.15 };
             },
             onEachFeature: function(feature, layer) {
                 if (feature.properties && feature.properties.INSPIREID) {
@@ -106,7 +90,7 @@
         // --- LAYER DECK CONTROLLER ---
         const baseMaps = {
             "Modern Street Map": modernOSM,
-            "NLS Detailed Six-Inch (1888-1913)": nlsSixInch,
+            "NLS OS Historic (1920-1940)": nlsPopular,
             "NLS Post-War OS (1950-1960)": nlsPostWar,
             "NLS Bartholomew (1900s)": nlsBartholomew
         };
@@ -119,7 +103,6 @@
 
         // --- TRIGGER PIPELINE ON ZOOM / PAN ---
         async function fetchLivePropertyBoundaries() {
-            // Only search if the boundary layer is actively selected and map is zoomed in close
             if (!map.hasLayer(boundaryLayer)) return;
             if (map.getZoom() < 15) {
                 logToTerminal("Zoom in closer (Level 15+) to download parcel vectors.");
@@ -127,7 +110,6 @@
             }
 
             const bounds = map.getBounds();
-            // Create bounding box parameters: west, south, east, north
             const bboxStr = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
             
             try {
@@ -135,8 +117,8 @@
                 const data = await res.json();
                 
                 if (data && data.features) {
-                    boundaryLayer.clearLayers(); // Wipe old out-of-frame shapes
-                    boundaryLayer.addData(data);  // Draw fresh land plots on the canvas!
+                    boundaryLayer.clearLayers();
+                    boundaryLayer.addData(data);
                     logToTerminal(`Injected ${data.features.length} freehold title vectors.`);
                 }
             } catch (err) {
@@ -144,12 +126,10 @@
             }
         }
 
-        // Run whenever the user stops dragging or zooming the map
         map.on('moveend', fetchLivePropertyBoundaries);
         map.on('overlayadd', function(e) {
             if (e.name === "Live Land Registry Plots") fetchLivePropertyBoundaries();
         });
-
 
         // --- GEOCODE SEARCH LOGIC ENGINE ---
         async function executeGeocodeSearch() {
@@ -198,7 +178,6 @@
                     </div>
                 `;
                 
-                // Fetch property parcels once the map flies to the new destination
                 setTimeout(fetchLivePropertyBoundaries, 1600);
 
             } catch (err) {
@@ -207,3 +186,5 @@
             }
         }
     </script>
+</body>
+</html>
