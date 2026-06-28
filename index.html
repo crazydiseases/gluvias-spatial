@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v31.0</title>
+    <title>Spatial Intercept Core v32.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,14 +27,15 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v31</div>
-        <div class="search-container">
-            <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
-            <button onclick="executeDirectGeocode()">SEEK</button>
-        </div>
+        <div class="deck-title">// SPATIAL INTERCEPT v32</div>
+        
+        <form class="search-container" onsubmit="executeDirectGeocode(event)">
+            <input type="text" id="targetQuery" placeholder="Enter postcode or town..." autocomplete="off">
+            <button type="submit">SEEK</button>
+        </form>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">System core normalized. Ready for postcode inputs.</p>
+            <p style="font-size: 11px; color: #71717a;">System timing matrices synchronized. Awaiting input node...</p>
         </div>
         
         <div id="zoomMonitor">
@@ -42,7 +43,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] V31 Scope Engine Stabilized.</div>
+        <div id="debugWindow">[SYSTEM READY] V32 Processing Array Baseline Online.</div>
     </div>
 
     <div id="map"></div>
@@ -148,8 +149,11 @@
         map.on('moveend', updateZoomMonitor);
         updateZoomMonitor();
 
-        // --- 7. FIXED GEOLOCATOR ENGINE ---
-        async function executeDirectGeocode() {
+        // --- 7. SECURE ASYNC STREAM PARSER WITH EVENT HOOK ---
+        async function executeDirectGeocode(event) {
+            // FIXED: Explicitly halts page reloads so tracking array remains in scope
+            if (event) event.preventDefault();
+
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
@@ -158,7 +162,12 @@
             sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Processing array payload...</p>';
 
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`);
+                // Fixed: Explicit header assignment matching diagnostics profile
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`,
+                    { headers: { 'User-Agent': 'SpatialInterceptAppv32' } }
+                );
+                
                 const data = await response.json();
 
                 if (!data || data.length === 0) {
