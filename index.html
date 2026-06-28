@@ -65,42 +65,40 @@
 
         // --- BASE MAP LAYERS ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            maxZoom: 19, attribution: '© OpenStreetMap'
         });
 
-        // 1. NLS Great Britain Popular Edition (1920s - 1940s)
         const nlsPopular = L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', {
-            minZoom: 1,
-            maxZoom: 18,
-            attribution: 'Historic Maps (1920-1940) courtesy of National Library of Scotland',
-            opacity: 0.85
+            minZoom: 1, maxZoom: 18, attribution: 'NLS 1920-1940 OS', opacity: 0.85
         });
 
-        // 2. NLS Bartholomew Great Britain (1900s) - Alternative historical series
         const nlsBartholomew = L.tileLayer('https://geo.nls.uk/maps/bartholomew/gb/{z}/{x}/{y}.png', {
-            minZoom: 1,
-            maxZoom: 18,
-            attribution: 'Bartholomew Map (1900s) courtesy of National Library of Scotland',
-            opacity: 0.85
+            minZoom: 1, maxZoom: 18, attribution: 'NLS Bartholomew 1900s', opacity: 0.85
         });
 
-        // 3. NLS Ordnance Survey One-Inch 7th Series (1950s - 1960s)
         const nlsPostWar = L.tileLayer('https://geo.nls.uk/maps/os/gb-one-inch-7th/{z}/{x}/{y}.png', {
-            minZoom: 1,
-            maxZoom: 18,
-            attribution: 'OS 7th Series (1950-1960) courtesy of National Library of Scotland',
-            opacity: 0.85
+            minZoom: 1, maxZoom: 18, attribution: 'NLS OS 1950-1960', opacity: 0.85
         });
 
         // --- MAP INITIALIZATION ---
         const map = L.map('map', {
-            center: [50.15, -5.07],
-            zoom: 13,
-            layers: [modernOSM] 
+            center: [50.15, -5.07], zoom: 13, layers: [modernOSM] 
         });
         
         let activeMarker = null;
+
+        // --- LIVE LAND REGISTRY DATA LAYER ---
+        // We build a dynamic GeoJSON layer to hold real property polygon frames
+        const boundaryLayer = L.geoJSON(null, {
+            style: function() {
+                return { color: '#e11d48', weight: 2, fillOpacity: 0.15 }; // Red vector lines like MapSearch
+            },
+            onEachFeature: function(feature, layer) {
+                if (feature.properties && feature.properties.INSPIREID) {
+                    layer.bindPopup(`<strong>Land Registry ID:</strong> ${feature.properties.INSPIREID}`);
+                }
+            }
+        }).addTo(map);
 
         // --- LAYER DECK CONTROLLER ---
         const baseMaps = {
@@ -110,11 +108,47 @@
             "NLS Post-War OS (1950-1960)": nlsPostWar
         };
 
-        // Adds the panel control menu to the upper right corner
-        L.control.layers(baseMaps, null, { collapsed: false }).addTo(map);
+        const overlayMaps = {
+            "Live Land Registry Plots": boundaryLayer
+        };
+
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+        // --- TRIGGER PIPELINE ON ZOOM / PAN ---
+        async function fetchLivePropertyBoundaries() {
+            // Only search if the boundary layer is actively selected and map is zoomed in close
+            if (!map.hasLayer(boundaryLayer)) return;
+            if (map.getZoom() < 15) {
+                logToTerminal("Zoom in closer (Level 15+) to download parcel vectors.");
+                return;
+            }
+
+            const bounds = map.getBounds();
+            // Create bounding box parameters: west, south, east, north
+            const bboxStr = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
+            
+            try {
+                const res = await fetch(`/api/boundaries?bbox=${bboxStr}`);
+                const data = await res.json();
+                
+                if (data && data.features) {
+                    boundaryLayer.clearLayers(); // Wipe old out-of-frame shapes
+                    boundaryLayer.addData(data);  // Draw fresh land plots on the canvas!
+                    logToTerminal(`Injected ${data.features.length} freehold title vectors.`);
+                }
+            } catch (err) {
+                console.error("Boundary error:", err);
+            }
+        }
+
+        // Run whenever the user stops dragging or zooming the map
+        map.on('moveend', fetchLivePropertyBoundaries);
+        map.on('overlayadd', function(e) {
+            if (e.name === "Live Land Registry Plots") fetchLivePropertyBoundaries();
+        });
 
 
-        // --- GEOCODE LOGIC ENGINE ---
+        // --- GEOCODE SEARCH LOGIC ENGINE ---
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
@@ -127,26 +161,15 @@
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_nocache=${Date.now()}`);
                 const rawText = await response.text();
                 
-                console.log("Raw Server Output Body:", rawText);
-
                 let parsedData = JSON.parse(rawText);
-                if (typeof parsedData === 'string') {
-                    parsedData = JSON.parse(parsedData);
-                }
+                if (typeof parsedData === 'string') parsedData = JSON.parse(parsedData);
 
                 let target = parsedData;
-                if (typeof target.shift === 'function') {
-                    target = target.shift();
-                }
-                if (target && typeof target.shift === 'function') {
-                    target = target.shift();
-                }
-
-                console.log("Strict Extracted Target Node:", target);
+                if (typeof target.shift === 'function') target = target.shift();
+                if (target && typeof target.shift === 'function') target = target.shift();
 
                 if (!target || typeof target !== 'object' || !target.hasOwnProperty('lat')) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
-                    logToTerminal("Trace complete. Target context unmatched.");
                     return;
                 }
 
@@ -156,7 +179,7 @@
                 logToTerminal(`Coordinates resolved. Fixed on target: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
                 
                 try {
-                    map.flyTo([lat, lon], 16, { animate: true, duration: 1.5 }); // Zoomed closer to see plot lines
+                    map.flyTo([lat, lon], 16, { animate: true, duration: 1.5 });
                 } catch (mapErr) {
                     map.setView([lat, lon], 16); 
                 }
@@ -171,9 +194,12 @@
                         <span style="color: #71717a; font-size: 11px;">Vectors: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
                     </div>
                 `;
+                
+                // Fetch property parcels once the map flies to the new destination
+                setTimeout(fetchLivePropertyBoundaries, 1600);
+
             } catch (err) {
                 console.error("Extraction Error:", err);
-                logToTerminal(`Tunnel error caught: ${err.message}`);
                 sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
             }
         }
