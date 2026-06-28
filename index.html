@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v37.0</title>
+    <title>Spatial Intercept Core v38.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,7 +27,7 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v37</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v38</div>
         
         <form class="search-container" onsubmit="executeDirectGeocode(event)">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." autocomplete="off">
@@ -35,7 +35,7 @@
         </form>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Keyless open architecture active. Free database matrices online.</p>
+            <p style="font-size: 11px; color: #71717a;">Photon high-availability array online. Map compilation secured.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -43,7 +43,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] v37 Open Source Engines Active.</div>
+        <div id="debugWindow">[SYSTEM READY] v38 Core Arrays Active.</div>
     </div>
 
     <div id="map"></div>
@@ -149,7 +149,7 @@
         map.on('moveend', updateZoomMonitor);
         updateZoomMonitor();
 
-        // --- 7. STABLE KEYLESS PUBLIC CLOUD GEOLOCATOR ENGINE ---
+        // --- 7. STABLE ARCHITECTURE GEOLOCATOR (POSTCODES.IO + PHOTON BY KOMOOT) ---
         async function executeDirectGeocode(event) {
             if (event) event.preventDefault();
 
@@ -158,7 +158,7 @@
 
             logToTerminal(`Initiating geocode sweep for: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Filtering stream parameters...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Processing location matrix...</p>';
 
             const postcodeRegex = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i;
             const isPostcode = postcodeRegex.test(query);
@@ -168,54 +168,4 @@
             try {
                 if (isPostcode) {
                     logToTerminal("Postcode detected. Querying dedicated postal database...");
-                    const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(query.replace(/\s+/g, ''))}`);
-                    const payload = await response.json();
-
-                    if (payload.status === 200 && payload.result) {
-                        lat = parseFloat(payload.result.latitude);
-                        lon = parseFloat(payload.result.longitude);
-                        displayName = `${query.toUpperCase()} — ${payload.result.admin_district}, UK`;
-                    }
-                }
-
-                // Completely keyless OpenStreetMap public alternative mirror
-                if (!lat || !lon) {
-                    logToTerminal("Town name detected. Querying public keyless geocoding index...");
-                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", United Kingdom")}`);
-                    const data = await response.json();
-
-                    if (data && data.length > 0) {
-                        lat = parseFloat(data.lat);
-                        lon = parseFloat(data.lon);
-                        displayName = data.display_name;
-                    }
-                }
-
-                if (!lat || !lon || isNaN(lat) || isNaN(lon)) {
-                    logToTerminal("FAILED: Location input dropped out of public arrays.");
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
-                    return;
-                }
-
-                logToTerminal(`SUCCESS: Node coordinates identified: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                map.setView([lat, lon], 15);
-
-                if (activeMarker) map.removeLayer(activeMarker);
-                activeMarker = L.marker([lat, lon]).addTo(map);
-
-                sidebar.innerHTML = `
-                    <div class="location-card">
-                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
-                        <p style="margin: 6px 0; color: #f4f4f5; font-size: 11px;">${displayName}</p>
-                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
-                    </div>
-                `;
-
-            } catch (err) {
-                logToTerminal(`Search Engine Exception: ${err.message}`);
-                sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>';
-            }
-        }
-    </script>
-</body>
-</html>
+                    const response = await fetch(
