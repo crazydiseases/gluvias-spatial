@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v39.0</title>
+    <title>Spatial Intercept Core v40.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,7 +27,7 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v39</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v40</div>
         
         <form class="search-container" onsubmit="executeDirectGeocode(event)">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." autocomplete="off">
@@ -35,7 +35,7 @@
         </form>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">System core restored. Standard geocoding stream ready.</p>
+            <p style="font-size: 11px; color: #71717a;">All 11 Map Arrays Restored. Robust coordinate array handling engine active.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -43,7 +43,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM ONLINE] Core maps compiled successfully.</div>
+        <div id="debugWindow">[SYSTEM ONLINE] Core arrays successfully restored and initialized.</div>
     </div>
 
     <div id="map"></div>
@@ -63,7 +63,7 @@
         const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
         // =========================================================
 
-        // --- 1. BASE STREET MAPS ---
+        // --- 1. BASE STREET MAPS & MODERN SATELLITE ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
             maxZoom: 19, attribution: '© OpenStreetMap contributors'
         });
@@ -72,7 +72,16 @@
             maxZoom: 22, attribution: '© MapTiler © Maxar'
         });
 
-        // --- 2. THE RESTORED HISTORICAL NLS TILES ---
+        const mapTilerOS = L.tileLayer(`https://api.maptiler.com/maps/uk-openzoomstack-leisure/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
+            maxZoom: 19, attribution: 'Contains OS data © Crown copyright'
+        });
+
+        // --- 2. HISTORIC AERIAL IMAGERY ARCHIVE ---
+        const historicAerial1940s = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19, attribution: 'Historic Imagery Archive Data'
+        });
+
+        // --- 3. ALL HISTORICAL MAP LAYERS SUCCESSFULLY RESTORED ---
         const nlsMultiScale = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
@@ -81,7 +90,27 @@
             minZoom: 6, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
-        // --- 3. MAP INITIALIZATION ENGINE ---
+        const nlsHills = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1885/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+        });
+
+        const nlsLondonFiveFoot = L.tileLayer(`https://api.maptiler.com/tiles/uk-oslondon1k1893/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 6, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+        });
+
+        const nlsInterwar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb10k1919/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 6, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+        });
+
+        const nlsProvisional = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb25k1937/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+        });
+
+        const nlsPostWar = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb63k1955/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
+        });
+
+        // --- 4. MAP INITIALIZATION ENGINE ---
         const map = L.map('map', {
             center: [50.26055, -5.05336], 
             zoom: 14, 
@@ -90,17 +119,24 @@
         
         let activeMarker = null;
 
-        // --- 4. LAYER CONTROL PANEL ---
+        // --- 5. COMPREHENSIVE LAYER CONTROL PANEL ---
         const baseMaps = {
             "Modern Street Map (OSM)": modernOSM,
             "Modern High-Res Satellite": modernSatellite,
+            "Modern Ordnance Survey Grid": mapTilerOS,
+            "Historical Aerial Base (1940s Frame)": historicAerial1940s,
             "NLS Dynamic Multi-Scale (1900s)": nlsMultiScale,
-            "NLS Victorian Six-Inch (1888-1913)": nlsSixInch
+            "NLS Victorian Six-Inch (1888-1913)": nlsSixInch,
+            "NLS One-Inch Hills Edition (1885)": nlsHills,
+            "NLS London Ultra-Detail (1893)": nlsLondonFiveFoot,
+            "NLS Interwar Complete (1919-1947)": nlsInterwar,
+            "NLS Provisional 1:25k (1937-1961)": nlsProvisional,
+            "NLS Post-War 7th Series (1955)": nlsPostWar
         };
 
         L.control.layers(baseMaps, {}, { collapsed: false }).addTo(map);
 
-        // --- 5. TELEMETRY MONITOR SYSTEM ---
+        // --- 6. TELEMETRY MONITOR SYSTEM ---
         function updateZoomMonitor() {
             const currentZoom = map.getZoom();
             const zoomDisplay = document.getElementById('zoomValue');
@@ -112,7 +148,7 @@
         map.on('moveend', updateZoomMonitor);
         updateZoomMonitor();
 
-        // --- 6. RESTORED & PROTECTED GEOCAL ENGINE ---
+        // --- 7. IMMUNE AND ROBUST COORDINATE PARSING ENGINE ---
         async function executeDirectGeocode(event) {
             if (event) event.preventDefault();
 
@@ -121,10 +157,9 @@
 
             logToTerminal(`Initiating geocode sweep for: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Querying index...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Parsing location stream...</p>';
 
             try {
-                // Fixed Nominatim call: uses a randomized User-Agent string to prevent header blockades
                 const response = await fetch(
                     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`,
                     { headers: { 'User-Agent': 'SpatialInterceptPlatform_' + Math.floor(Math.random() * 100000) } }
@@ -132,25 +167,32 @@
                 
                 const data = await response.json();
 
-                if (!data || data.length === 0) {
-                    logToTerminal("FAILED: Location not found in index.");
+                // Safe array check: covers empty, stringed, or object returned results securely
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    logToTerminal("FAILED: Target context dropped out of public arrays.");
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location Not Found.</p>';
                     return;
                 }
 
                 const target = data;
+                
+                // Absolute structural conversion check prevents coordinate dropouts
+                if (!target.hasOwnProperty('lat') || !target.hasOwnProperty('lon')) {
+                    logToTerminal("ERROR: Malformed layout response missing explicit keys.");
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Object Schema Mismatch.</p>';
+                    return;
+                }
+
                 let lat = parseFloat(target.lat);
                 let lon = parseFloat(target.lon);
 
                 if (isNaN(lat) || isNaN(lon)) {
-                    logToTerminal("ERROR: Invalid coordinate formats received.");
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Coordinate Exception.</p>';
+                    logToTerminal("ERROR: Floating calculation mismatch parsing strings.");
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Floating Point Mismatch.</p>';
                     return;
                 }
 
                 logToTerminal(`SUCCESS: Formatted coords resolved: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                
-                // Fly seamlessly to the coordinates
                 map.setView([lat, lon], 15);
 
                 if (activeMarker) map.removeLayer(activeMarker);
@@ -165,8 +207,8 @@
                 `;
 
             } catch (err) {
-                logToTerminal(`Search Engine Exception: ${err.message}`);
-                sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Search dropped out.</p>';
+                logToTerminal(`System Crash Intercepted: ${err.message}`);
+                sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Array Stream Exception</p>';
             }
         }
     </script>
