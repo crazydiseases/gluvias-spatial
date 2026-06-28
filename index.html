@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Spatial Intercept Deck v11.0</title>
+    <title>Historical Intercept Deck v12.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -26,15 +26,15 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT CORE v11</div>
+        <div class="deck-title">// SPATIAL INTERCEPT CORE v12</div>
         <div class="search-container">
-            <input type="text" id="targetQuery" placeholder="Enter postcode or area (e.g. TR1 2NS)..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
+            <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
             <button onclick="executeGeocodeSearch()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">System core initialized. Full layer matrix assembled.</p>
+            <p style="font-size: 11px; color: #71717a;">System core reverted to baseline alignment. Awaiting search parameters.</p>
         </div>
-        <div id="debugWindow">[SYSTEM READY] V11 Master Deck Compiled.</div>
+        <div id="debugWindow">[SYSTEM READY] V12 Stable Baseline Online.</div>
     </div>
 
     <div id="map"></div>
@@ -51,10 +51,15 @@
 
         // =========================================================
         // INSERT YOUR MAPTILER API KEY IN THE QUOTES BELOW:
-        const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
+        const MAPTILER_KEY = "PASTE_YOUR_MAPTILER_API_KEY_HERE";
         // =========================================================
 
-        // --- LAYER 1 & 2: VINTAGE HISTORICAL NLS DATA ---
+        // --- MODERN OSM STARTUP BASE ---
+        const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+            maxZoom: 19, attribution: '© OpenStreetMap volunteers'
+        });
+
+        // --- AUTHENTIC HISTORICAL NLS DATA CHANNELS ---
         const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire10k1900/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
@@ -63,29 +68,14 @@
             minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
 
-        // --- LAYER 3: CURRENT ORDNANCE SURVEY MODERN ROAD MAP ---
-        const currentOSMap = L.tileLayer(`https://api.maptiler.com/maps/uk-openzoomstack-road/256/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 19, attribution: 'Contains OS data © Crown copyright and database right'
-        });
-
-        // --- LAYER 4: HIGH-RESOLUTION GLOBAL SATELLITE IMAGERY ---
-        const satelliteImagery = L.tileLayer(`https://api.maptiler.com/tiles/satellite-v4/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 20, attribution: '© MapTiler Satellite Data Layer'
-        });
-
-        // Fallback open source backup
-        const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            maxZoom: 19, attribution: '© OpenStreetMap'
-        });
-
-        // --- INITIALIZE MAP CONTAINER ---
+        // --- INITIALIZE MAP CONTAINER WITH MODERN BASE ---
         const map = L.map('map', {
-            center: [50.26055, -5.05336], zoom: 14, layers: [nlsSixInch] 
+            center: [50.26055, -5.05336], zoom: 14, layers: [modernOSM] 
         });
         
         let activeMarker = null;
 
-        // --- DYNAMIC HM LAND REGISTRY WMS (PROJECTION CONSTRAINED) ---
+        // --- DYNAMIC HM LAND REGISTRY WMS (PROJECTION STABLE) ---
         const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
             layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
@@ -97,13 +87,11 @@
             opacity: 0.65
         }).addTo(map);
 
-        // --- COMPREHENSIVE LAYER CONTROL SWITCHER ---
+        // --- CONTROL DECKS ARRAY ---
         const baseMaps = {
-            "NLS Historic Six-Inch (1888-1913)": nlsSixInch,
-            "NLS Post-War One-Inch (1955-1961)": nlsPostWar,
-            "Current Ordnance Survey Map": currentOSMap,
-            "High-Res Satellite View": satelliteImagery,
-            "OpenStreetMap Standard": modernOSM
+            "Modern Street Map Reference": modernOSM,
+            "NLS Historic Detailed Six-Inch (1888-1913)": nlsSixInch,
+            "NLS Post-War One-Inch (1955-1961)": nlsPostWar
         };
 
         const overlayMaps = {
@@ -112,54 +100,24 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // Monitor map zoom variations
+        // Track layers and zoom constraints
         map.on('moveend', function() {
             if (map.hasLayer(landRegistryWMS) && map.getZoom() < 16) {
                 logToTerminal("NOTICE: Land Registry lines require Zoom Level 16+ to render.");
             }
         });
 
-        // --- UNPACKING SEARCH PARSER ---
+        // --- STRING-SAFE UNPACKING SEARCH PARSER ---
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
             logToTerminal(`Routing search query: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting data rows...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting rows...</p>';
 
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
                 let rawData = await response.json();
                 
-                // Deep string cleaning loops
-                while (typeof rawData === 'string') {
-                    if (rawData.startsWith('"') && rawData.endsWith('"')) {
-                        rawData = rawData.slice(1, -1);
-                    }
-                    rawData = JSON.parse(rawData);
-                }
-
-                let target = Array.isArray(rawData) ? rawData : rawData;
-
-                if (!target || (!target.lat && !target.latitude)) {
-                    logToTerminal("FAILED: Target missing lat/lon variables.");
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
-                    return;
-                }
-
-                let lat = Number(target.lat || target.latitude);
-                let lon = Number(target.lon || target.longitude);
-
-                logToTerminal(`SUCCESS: Extracted coords: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                
-                map.setView([lat, lon], 17);
-
-                if (activeMarker) map.removeLayer(activeMarker);
-                activeMarker = L.marker([lat, lon]).addTo(map);
-
-                sidebar.innerHTML = `
-                    <div class="location-card">
-                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
-                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name || query}</p>
-                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${
+                // Unpack multi-serialized backend string structures cleanly
