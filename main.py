@@ -13,7 +13,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Keep your existing Nominatim Geocode routing handler
 @app.get("/api/search")
 async def search_location(q: str = Query(...)):
     url = f"https://nominatim.openstreetmap.org/search?q={q}&format=json&addressdetails=1&limit=1"
@@ -28,13 +27,9 @@ async def search_location(q: str = Query(...)):
         except Exception as e:
             return JSONResponse(status_code=500, content={"error": str(e)})
 
-# NEW PARCEL TUNNEL: Intercepts property polygons from the Land Registry open ArcGIS proxy
 @app.get("/api/boundaries")
 async def get_property_boundaries(bbox: str = Query(...)):
-    """
-    bbox shape: west,south,east,north (Standard Web Mercator)
-    """
-    # Direct live pipeline to HM Land Registry's ArcGIS Open Data Server
+    # Direct pipeline tunnel to HM Land Registry's ArcGIS Open Server asset node
     arcgis_url = "https://services.arcgis.com/hkgg97S808S37IuI/ArcGIS/rest/services/INSPIRE_Index_Polygons_Open/FeatureServer/0/query"
     
     params = {
