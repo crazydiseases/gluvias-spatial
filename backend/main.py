@@ -18,15 +18,22 @@ async def serve_workspace():
 @app.get("/api/search")
 async def proxy_geocode(q: str):
     headers = {
-        "User-Agent": "GluviasSpatialConsoleApp/3.0 (internal-contact@stuttassociates.internal)"
+        "User-Agent": "GluviasSpatialConsoleApp/4.0 (internal-contact@stuttassociates.internal)"
     }
     
-    # Utilizing an open, high-availability public mirror endpoint
-    url = f"https://nominatim.openstreetmap.org/search?format=json&q={q.strip()}&limit=1"
-    
+    # Passing query arguments using a dictionary mapping guarantees proper percent-encoding format
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            response = await client.get(url, headers=headers)
+            response = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={
+                    "format": "json",
+                    "q": q.strip(),
+                    "limit": 1,
+                    "addressdetails": 1
+                },
+                headers=headers
+            )
             return response.json()
         except Exception as e:
             return {"error": str(e)}
