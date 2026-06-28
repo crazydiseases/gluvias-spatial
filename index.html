@@ -55,17 +55,17 @@
             maxZoom: 19, attribution: '© OpenStreetMap'
         });
 
-        // Direct paths through NLS Amazon servers - no third-party watermarks
+        // FIXED NLS ENDPOINTS: Added standard TMS flag inversion to resolve image coordinates
         const nlsPopular = L.tileLayer('https://geo.nls.uk/maps/os/gb/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS 1920-1940 OS', opacity: 0.85
+            minZoom: 1, maxZoom: 18, attribution: 'NLS 1920-1940 OS', opacity: 0.85, tms: true
         });
 
         const nlsPostWar = L.tileLayer('https://geo.nls.uk/maps/os/gb-one-inch-7th/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS OS 1950-1960', opacity: 0.85
+            minZoom: 1, maxZoom: 18, attribution: 'NLS OS 1950-1960', opacity: 0.85, tms: true
         });
 
         const nlsBartholomew = L.tileLayer('https://geo.nls.uk/maps/bartholomew/gb/{z}/{x}/{y}.png', {
-            minZoom: 1, maxZoom: 18, attribution: 'NLS Bartholomew 1900s', opacity: 0.85
+            minZoom: 1, maxZoom: 18, attribution: 'NLS Bartholomew 1900s', opacity: 0.85, tms: true
         });
 
         // --- MAP INITIALIZATION ---
@@ -78,7 +78,7 @@
         // --- LIVE LAND REGISTRY DATA LAYER ---
         const boundaryLayer = L.geoJSON(null, {
             style: function() {
-                return { color: '#e11d48', weight: 2, fillOpacity: 0.15 };
+                return { color: '#e11d48', weight: 2, fillOpacity: 0.2 }; // Strong bright red outlines
             },
             onEachFeature: function(feature, layer) {
                 if (feature.properties && feature.properties.INSPIREID) {
@@ -104,8 +104,10 @@
         // --- TRIGGER PIPELINE ON ZOOM / PAN ---
         async function fetchLivePropertyBoundaries() {
             if (!map.hasLayer(boundaryLayer)) return;
-            if (map.getZoom() < 15) {
-                logToTerminal("Zoom in closer (Level 15+) to download parcel vectors.");
+            
+            // FIXED ZOOM GATE: Allowed data downloading from a much higher altitude view
+            if (map.getZoom() < 10) {
+                logToTerminal("Zoom in closer (Level 10+) to download parcel vectors.");
                 return;
             }
 
@@ -186,5 +188,3 @@
             }
         }
     </script>
-</body>
-</html>
