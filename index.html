@@ -63,7 +63,6 @@
             }
         }
 
-        // Standard Leaflet Initialization
         const map = L.map('map').setView([50.15, -5.07], 13);
         let activeMarker = null;
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
@@ -77,36 +76,26 @@
             sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting telemetry points...</p>';
 
             try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_nocache=${Date.now()}`);
+                const response = await fetch(`/api/v2/locate?q=${encodeURIComponent(query)}&_nocache=${Date.now()}`);
                 const rawText = await response.text();
                 
                 console.log("Raw Server Output Body:", rawText);
 
-                // Multi-tier Fallback Parser
-                let parsedData;
-                try {
-                    parsedData = JSON.parse(rawText);
-                    if (typeof parsedData === 'string') {
-                        parsedData = JSON.parse(parsedData);
-                    }
-                } catch (e) {
-                    console.error("Internal Parse Warning:", e);
-                    parsedData = null;
+                let parsedData = JSON.parse(rawText);
+                if (typeof parsedData === 'string') {
+                    parsedData = JSON.parse(parsedData);
                 }
 
-                // Isolate target object safely
-                let target = null;
-                if (parsedData) {
-                    if (Array.isArray(parsedData) && parsedData.length > 0) {
-                        target = parsedData;
-                    } else if (typeof parsedData === 'object') {
-                        target = parsedData;
-                    }
+                // THE DIRECT GRABBER: Flatten any array structure down completely
+                let target = parsedData;
+                if (Array.isArray(target)) {
+                    target = target.flat(5); // Flattens up to 5 layers deep instantly
                 }
 
-                console.log("Isolated Target Processing Node:", target);
+                console.log("Strict Extracted Target Node:", target);
 
-                if (!target || (!target.lat && !target.lon)) {
+                // Read coordinates directly from the flattened object
+                if (!target || !target.lat || !target.lon) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
                     logToTerminal("Trace complete. Target context unmatched.");
                     return;
@@ -129,11 +118,9 @@
                     </div>
                 `;
             } catch (err) {
-                console.error("Global Catch Error:", err);
+                console.error("Extraction Error:", err);
                 logToTerminal(`Tunnel error caught: ${err.message}`);
                 sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
             }
         }
     </script>
-</body>
-</html>
