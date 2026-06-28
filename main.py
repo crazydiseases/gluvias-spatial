@@ -18,7 +18,7 @@ async def serve_workspace():
 @app.get("/api/search")
 async def proxy_geocode(q: str):
     headers = {
-        "User-Agent": "GluviasSpatialConsoleEngine/10.0 (stuttassociates@internal.com)"
+        "User-Agent": "GluviasSpatialConsoleEngine/12.0 (stuttassociates@internal.com)"
     }
     
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -33,7 +33,6 @@ async def proxy_geocode(q: str):
                 },
                 headers=headers
             )
-            # Pull the standard JSON array cleanly
             return response.json()
         except Exception as e:
             return {"error": str(e)}
