@@ -65,7 +65,6 @@
         let activeMarker = null;
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-        L.tileLayer('https://nls.tileserver.com/nls/{z}/{x}/{y}.jpg', { maxZoom: 18, opacity: 0.9 }).addTo(map);
 
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
@@ -76,7 +75,6 @@
             sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting telemetry points...</p>';
 
             try {
-                // Force a query timestamp parameter to shatter any lingering web browser proxy caches
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
                 let data = await response.json();
 
@@ -90,15 +88,9 @@
                     return;
                 }
 
-                let lat = parseFloat(target.lat);
-                let lon = parseFloat(target.lon);
-
-                // Fallback attempt: if root attributes are missing, extract from coordinate bounding box array
-                if ((isNaN(lat) || isNaN(lon)) && target.boundingbox && target.boundingbox.length >= 2) {
-                    logToTerminal("Calculating location vectors from bounding array...");
-                    lat = (parseFloat(target.boundingbox) + parseFloat(target.boundingbox)) / 2;
-                    lon = (parseFloat(target.boundingbox) + parseFloat(target.boundingbox)) / 2;
-                }
+                // STRICT FLOAT ENFORCEMENT TO SATISFY LEAFLET RULES
+                let lat = Number(target.lat);
+                let lon = Number(target.lon);
 
                 if (isNaN(lat) || isNaN(lon)) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Payload coordinates unresolved.</p>';
