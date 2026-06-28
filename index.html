@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v30.0</title>
+    <title>Spatial Intercept Core v31.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,14 +27,14 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v30</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v31</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
             <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Complete out-of-copyright library and historic aerial array compiled.</p>
+            <p style="font-size: 11px; color: #71717a;">System core normalized. Ready for postcode inputs.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -42,7 +42,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] Full Legacy Matrix Instantiated.</div>
+        <div id="debugWindow">[SYSTEM READY] V31 Scope Engine Stabilized.</div>
     </div>
 
     <div id="map"></div>
@@ -75,13 +75,12 @@
             maxZoom: 19, attribution: 'Contains OS data © Crown copyright'
         });
 
-        // --- 2. VERIFIED HISTORIC AERIAL / SATELLITE ANALOG ---
+        // --- 2. HISTORIC AERIAL IMAGERY ARCHIVE ---
         const historicAerial1940s = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            attribution: 'Historic Imagery Archive Data'
+            maxZoom: 19, attribution: 'Historic Imagery Archive Data'
         });
 
-        // --- 3. THE COMPLETE OUT-OF-COPYRIGHT NLS HISTORICAL STACK ---
+        // --- 3. COMPLETE NLS HISTORICAL STACK ---
         const nlsMultiScale = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
@@ -149,7 +148,7 @@
         map.on('moveend', updateZoomMonitor);
         updateZoomMonitor();
 
-        // --- 7. SECURE GEOLOCATOR STRING DATA PARSER ---
+        // --- 7. FIXED GEOLOCATOR ENGINE ---
         async function executeDirectGeocode() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
@@ -194,7 +193,7 @@
 
             } catch (err) {
                 logToTerminal(`Direct Search Exception: ${err.message}`);
-                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
+                sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>';
             }
         }
     </script>
