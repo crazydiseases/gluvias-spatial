@@ -1,7 +1,7 @@
 import httpx
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 
 app = FastAPI()
 
@@ -12,6 +12,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# FIXED ROOT HANDLER: Serves your index.html file whenever someone goes to the app's address
+@app.get("/")
+async def serve_frontend():
+    return FileResponse("index.html")
 
 @app.get("/api/search")
 async def search_location(q: str = Query(...)):
@@ -51,3 +56,4 @@ async def get_property_boundaries(bbox: str = Query(...)):
             return JSONResponse(status_code=response.status_code, content={"error": "HMLR Server dropped proxy stream"})
         except Exception as e:
             return JSONResponse(status_code=500, content={"error": str(e)})
+        
