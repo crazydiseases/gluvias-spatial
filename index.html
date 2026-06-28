@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historical Intercept Deck v9.0</title>
+    <title>Historical Intercept Deck v10.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -26,15 +26,15 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT CORE v9</div>
+        <div class="deck-title">// SPATIAL INTERCEPT CORE v10</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
             <button onclick="executeGeocodeSearch()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">System core initialized. System awaiting parameters.</p>
+            <p style="font-size: 11px; color: #71717a;">System core initialized. Fast-parsing loops armed.</p>
         </div>
-        <div id="debugWindow">[SYSTEM READY] V9 Parser Restructured.</div>
+        <div id="debugWindow">[SYSTEM READY] V10 Unpacking Loop Online.</div>
     </div>
 
     <div id="map"></div>
@@ -74,7 +74,7 @@
         
         let activeMarker = null;
 
-        // --- REAL-TIME LAND REGISTRY PLOTS WMS ---
+        // --- DYNAMIC HM LAND REGISTRY WMS (PROJECTION SECURED) ---
         const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
             layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
@@ -83,7 +83,7 @@
             crs: L.CRS.EPSG4326,
             attribution: 'Contains HM Land Registry data © Crown copyright',
             maxZoom: 22,
-            opacity: 0.7
+            opacity: 0.65
         }).addTo(map);
 
         // --- LAYER CONTROLLERS ---
@@ -99,66 +99,18 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // Warn users if they are zoomed out too far to view the properties
+        // Monitor map zoom variations
         map.on('moveend', function() {
             if (map.hasLayer(landRegistryWMS) && map.getZoom() < 16) {
                 logToTerminal("NOTICE: Land Registry lines require Zoom Level 16+ to render.");
             }
         });
 
-        // --- RE-ENGINEERED SEARCH PARSING SYSTEM ---
+        // --- ROBUST UNPACKING SEARCH PARSER ---
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
             logToTerminal(`Routing search query: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Intercepting data rows...</p>';
-
-            try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
-                let rawData = await response.json();
-                
-                // MULTI-STAGE UNPACKING PIPELINE: Ensures parsing checks string layouts cleanly
-                if (typeof rawData === 'string') {
-                    try { rawData = JSON.parse(rawData); } catch(e) {}
-                }
-                if (typeof rawData === 'string') {
-                    try { rawData = JSON.parse(rawData); } catch(e) {}
-                }
-
-                let target = Array.isArray(rawData) ? rawData : rawData;
-
-                if (!target || (!target.lat && !target.latitude)) {
-                    logToTerminal("FAILED: Parser rejected structural model.");
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
-                    return;
-                }
-
-                let lat = Number(target.lat || target.latitude);
-                let lon = Number(target.lon || target.longitude);
-
-                logToTerminal(`SUCCESS: Coordinates extracted. Found: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                
-                // Automatically zooms into level 18 so the Land Registry boundaries load
-                map.setView([lat, lon], 18);
-
-                if (activeMarker) map.removeLayer(activeMarker);
-                activeMarker = L.marker([lat, lon]).addTo(map);
-
-                sidebar.innerHTML = `
-                    <div class="location-card">
-                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
-                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name || query}</p>
-                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
-                    </div>
-                `;
-
-            } catch (err) {
-                logToTerminal(`Parsing Exception Error: ${err.message}`);
-                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
-            }
-        }
-    </script>
-</body>
-</html>
+            sidebar.innerHTML = '<p style
