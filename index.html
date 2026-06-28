@@ -10,7 +10,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
         body { background-color: #09090b; color: #f4f4f5; display: flex; height: 100vh; overflow: hidden; }
         #controlDeck { width: 360px; background-color: #18181b; border-right: 1px solid #27272a; display: flex; flex-direction: column; padding: 16px; }
-        #map { flex-grow: 1; height: 100%; background: #09090b; }
+        #map { flex-grow: 1; height: 100%; background: #09090b; position: relative; }
         .deck-title { font-size: 14px; font-weight: bold; color: #e11d48; margin-bottom: 12px; letter-spacing: 1px; }
         .search-container { display: flex; gap: 8px; margin-bottom: 16px; }
         input { flex-grow: 1; background: #09090b; border: 1px solid #27272a; padding: 8px; color: #f4f4f5; font-size: 12px; outline: none; }
@@ -18,7 +18,10 @@
         button { background: #e11d48; color: white; border: none; padding: 8px 16px; font-size: 12px; cursor: pointer; font-weight: bold; }
         button:hover { background: #be123c; }
         #telemetryOutput { flex-grow: 1; overflow-y: auto; background: #09090b; border: 1px solid #27272a; padding: 12px; margin-bottom: 8px; }
-        #zoomMonitor { background: #09090b; border: 1px solid #27272a; border-bottom: none; padding: 6px 12px; font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; }
+        
+        /* LIVE MONITOR SYSTEM */
+        #zoomMonitor { background: #09090b; border: 1px solid #27272a; border-bottom: none; padding: 8px 12px; font-size: 11px; font-weight: bold; display: flex; justify-content: space-between; }
+        
         #debugWindow { height: 120px; background: #000; border: 1px solid #27272a; padding: 8px; font-size: 10px; color: #22c55e; overflow-y: auto; white-space: pre-wrap; }
         .location-card { border-left: 2px solid #e11d48; padding-left: 8px; margin-bottom: 8px; }
         .leaflet-control-layers { background: #18181b !important; color: #f4f4f5 !important; border: 1px solid #27272a !important; font-family: monospace !important; font-size: 11px !important; }
@@ -27,21 +30,21 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT DIRECT v16</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v16</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
             <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Direct authenticated browser routing active.</p>
+            <p style="font-size: 11px; color: #71717a;">System core online. Map container verified.</p>
         </div>
         
         <div id="zoomMonitor">
             <span style="color: #71717a;">MAP ZOOM TELEMETRY:</span>
-            <span id="zoomValue" style="color: #e11d48;">Z-LVL 14</span>
+            <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] V16 Direct Header Pipeline Online.</div>
+        <div id="debugWindow">[SYSTEM READY] V16 Framework Assembled.</div>
     </div>
 
     <div id="map"></div>
@@ -61,8 +64,9 @@
         const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
         // =========================================================
 
+        // --- 1. BASE LAYERS DEFINITION ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            maxZoom: 19, attribution: '© OpenStreetMap'
+            maxZoom: 19, attribution: '© OpenStreetMap contributors'
         });
 
         const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire10k1900/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
@@ -73,12 +77,16 @@
             minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
 
+        // --- 2. SETUP INITIAL MAP OBJECT ---
         const map = L.map('map', {
-            center: [50.26055, -5.05336], zoom: 14, layers: [modernOSM] 
+            center: [50.26055, -5.05336], 
+            zoom: 14, 
+            layers: [modernOSM] // Modern OSM serves as the baseline
         });
         
         let activeMarker = null;
 
+        // --- 3. OVERLAY LAYERS (INITIALIZED AND LINKED POST-INITIALIZATION) ---
         const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows', {
             layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
@@ -90,6 +98,7 @@
             opacity: 0.70
         }).addTo(map);
 
+        // --- 4. ASSEMBLE CONTROLLER INTERFACE ---
         const baseMaps = {
             "Modern Base Map (Standard)": modernOSM,
             "NLS Historic Detailed Six-Inch (1888-1913)": nlsSixInch,
@@ -102,9 +111,12 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
+        // --- 5. REAL-TIME ZOOM TRACKING MONITOR ENGINE ---
         function updateZoomMonitor() {
             const currentZoom = map.getZoom();
             const zoomDisplay = document.getElementById('zoomValue');
+            if (!zoomDisplay) return;
+            
             if (currentZoom >= 16) {
                 zoomDisplay.innerHTML = `Z-LVL ${currentZoom} <span style="color: #22c55e; font-size: 9px;">[LR READY]</span>`;
             } else {
@@ -112,6 +124,7 @@
             }
         }
 
+        // Attach event handlers
         map.on('zoomend', updateZoomMonitor);
         map.on('moveend', function() {
             updateZoomMonitor();
@@ -120,8 +133,53 @@
             }
         });
 
+        // Initialize display frame state on instantiation
         updateZoomMonitor();
 
-        // --- AUTHENTICATED DIRECT BROWSER GEODATA INTERCEPT ---
+        // --- 6. DIRECT BROWSER GEOLOCATION SEARCH ---
         async function executeDirectGeocode() {
-            const query = document.getElementById('targetQuery').
+            const query = document.getElementById('targetQuery').value.trim();
+            if (!query) return;
+
+            logToTerminal(`Direct query intercept: "${query}"`);
+            const sidebar = document.getElementById('telemetryOutput');
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Contacting spatial array...</p>';
+
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`);
+                const data = await response.json();
+
+                if (!data || data.length === 0) {
+                    logToTerminal("FAILED: Target location context dropped out of index.");
+                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
+                    return;
+                }
+
+                const target = data;
+                let lat = Number(target.lat);
+                let lon = Number(target.lon);
+
+                logToTerminal(`SUCCESS: Target resolved to coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                
+                // Advance viewport zoom straight to level 17 to auto-trigger land registry plots
+                map.setView([lat, lon], 17);
+
+                if (activeMarker) map.removeLayer(activeMarker);
+                activeMarker = L.marker([lat, lon]).addTo(map);
+
+                sidebar.innerHTML = `
+                    <div class="location-card">
+                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED via DIRECT CONNECT]</strong>
+                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name}</p>
+                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                    </div>
+                `;
+
+            } catch (err) {
+                logToTerminal(`Direct Search Exception: ${err.message}`);
+                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
