@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historical Intercept Deck v8.0</title>
+    <title>Historical Intercept Deck v9.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -26,15 +26,15 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT CORE v8</div>
+        <div class="deck-title">// SPATIAL INTERCEPT CORE v9</div>
         <div class="search-container">
-            <input type="text" id="targetQuery" placeholder="Enter postcode or city..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
+            <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
             <button onclick="executeGeocodeSearch()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">System ready. Enter search parameter.</p>
+            <p style="font-size: 11px; color: #71717a;">System core initialized. System awaiting parameters.</p>
         </div>
-        <div id="debugWindow">[SYSTEM READY] V8 Spatial Framework Assembled.</div>
+        <div id="debugWindow">[SYSTEM READY] V9 Parser Restructured.</div>
     </div>
 
     <div id="map"></div>
@@ -51,10 +51,10 @@
 
         // =========================================================
         // INSERT YOUR MAPTILER API KEY IN THE QUOTES BELOW:
-        const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
+        const MAPTILER_KEY = "PASTE_YOUR_MAPTILER_API_KEY_HERE";
         // =========================================================
 
-        // --- AUTHENTIC NLS HISTORICAL MAP LAYERS ---
+        // --- HISTORICAL MAP BASE TILES ---
         const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire10k1900/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
@@ -67,29 +67,28 @@
             maxZoom: 19, attribution: '© OpenStreetMap'
         });
 
-        // --- MAP INITIALIZATION ---
+        // --- INITIALIZE MAP CONTAINER ---
         const map = L.map('map', {
-            center: [50.26055, -5.05336], zoom: 16, layers: [nlsSixInch] 
+            center: [50.26055, -5.05336], zoom: 14, layers: [nlsSixInch] 
         });
         
         let activeMarker = null;
 
-        // --- FIXED HM LAND REGISTRY WMS (PROJECTION CONSTRAINED) ---
+        // --- REAL-TIME LAND REGISTRY PLOTS WMS ---
         const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
             layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
             transparent: true,
             version: '1.3.0',
-            // CRS definition realigns coordinates for the Land Registry layer
-            crs: L.CRS.EPSG4326, 
+            crs: L.CRS.EPSG4326,
             attribution: 'Contains HM Land Registry data © Crown copyright',
             maxZoom: 22,
-            opacity: 0.65
+            opacity: 0.7
         }).addTo(map);
 
-        // --- CONTROLLER PANEL ---
+        // --- LAYER CONTROLLERS ---
         const baseMaps = {
-            "NLS Historic Six-Inch (1888-1913)": nlsSixInch,
+            "NLS Historic Detailed Six-Inch (1888-1913)": nlsSixInch,
             "NLS Post-War One-Inch (1955-1961)": nlsPostWar,
             "Modern Street Map Reference": modernOSM
         };
@@ -100,7 +99,14 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // --- SEARCH ENGINE ---
+        // Warn users if they are zoomed out too far to view the properties
+        map.on('moveend', function() {
+            if (map.hasLayer(landRegistryWMS) && map.getZoom() < 16) {
+                logToTerminal("NOTICE: Land Registry lines require Zoom Level 16+ to render.");
+            }
+        });
+
+        // --- RE-ENGINEERED SEARCH PARSING SYSTEM ---
         async function executeGeocodeSearch() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
@@ -111,23 +117,31 @@
 
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
-                let data = await response.json();
+                let rawData = await response.json();
                 
-                // FIXED PARSER: Decodes the string array format returned by the proxy
-                if (typeof data === 'string') data = JSON.parse(data);
-                let target = Array.isArray(data) ? data : data;
+                // MULTI-STAGE UNPACKING PIPELINE: Ensures parsing checks string layouts cleanly
+                if (typeof rawData === 'string') {
+                    try { rawData = JSON.parse(rawData); } catch(e) {}
+                }
+                if (typeof rawData === 'string') {
+                    try { rawData = JSON.parse(rawData); } catch(e) {}
+                }
 
-                if (!target || !target.lat) {
-                    logToTerminal("Target structure dropped or missing properties.");
+                let target = Array.isArray(rawData) ? rawData : rawData;
+
+                if (!target || (!target.lat && !target.latitude)) {
+                    logToTerminal("FAILED: Parser rejected structural model.");
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
                     return;
                 }
 
-                let lat = Number(target.lat);
-                let lon = Number(target.lon);
+                let lat = Number(target.lat || target.latitude);
+                let lon = Number(target.lon || target.longitude);
 
-                logToTerminal(`Resolved coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                map.setView([lat, lon], 17);
+                logToTerminal(`SUCCESS: Coordinates extracted. Found: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                
+                // Automatically zooms into level 18 so the Land Registry boundaries load
+                map.setView([lat, lon], 18);
 
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
@@ -141,7 +155,7 @@
                 `;
 
             } catch (err) {
-                logToTerminal(`Parsing Exception: ${err.message}`);
+                logToTerminal(`Parsing Exception Error: ${err.message}`);
                 sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
             }
         }
