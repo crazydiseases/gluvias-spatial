@@ -37,8 +37,8 @@
             <div>
                 <h3 class="section-title">Spatial Target Control</h3>
                 <div class="search-block">
-                    <input type="text" id="targetQuery" class="console-input" placeholder="Enter postcode or place name..." onkeydown="if(event.key === 'Enter') executeGeocodeSearch()">
-                    <button onclick="executeGeocodeSearch()" class="console-button">EXECUTE</button>
+                    <input type="text" id="targetQuery" class="console-input" placeholder="Enter postcode or place name..." />
+                    <button id="execBtn" class="console-button">EXECUTE</button>
                 </div>
             </div>
             <div>
@@ -61,13 +61,16 @@
             logger.scrollTop = logger.scrollHeight;
         }
 
+        // Initialize Map cleanly
         const map = L.map('map').setView([50.15, -5.07], 13);
         let activeMarker = null;
-
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
         async function executeGeocodeSearch() {
-            const query = document.getElementById('targetQuery').value.trim();
+            const queryInput = document.getElementById('targetQuery');
+            if (!queryInput) return;
+            
+            const query = queryInput.value.trim();
             if (!query) return;
 
             logToTerminal(`Routing spatial intercept query: "${query}"`);
@@ -76,7 +79,8 @@
 
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
-                let data = await response.json();
+                const data = await response.json();
+                console.log("Raw Server Data:", data);
 
                 if (data && data.error) throw new Error(data.error);
 
@@ -105,10 +109,17 @@
                     </div>
                 `;
             } catch (err) {
+                console.error("Caught Error:", err);
                 logToTerminal(`Tunnel error caught: ${err.message}`);
                 sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
             }
         }
+
+        // Attach listeners safely via modern JS properties instead of dirty HTML attributes
+        document.getElementById('execBtn').addEventListener('click', executeGeocodeSearch);
+        document.getElementById('targetQuery').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') executeGeocodeSearch();
+        });
     </script>
 </body>
 </html>
