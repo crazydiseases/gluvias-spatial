@@ -63,7 +63,6 @@
             }
         }
 
-        // Standard Inline Map Mounting Layout
         const map = L.map('map').setView([50.15, -5.07], 13);
         let activeMarker = null;
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
@@ -78,20 +77,13 @@
 
             try {
                 const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
-                
-                // Directly capture response as a flexible JSON string conversion layer
                 const data = await response.json();
+                
                 console.log("Incoming Data Profile:", data);
 
-                // Unpack any double-stringified objects passing through backend proxy frameworks
-                let parsed = typeof data === 'string' ? JSON.parse(data) : data;
-                if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+                let target = Array.isArray(data) ? data : data;
 
-                if (parsed && parsed.error) throw new Error(parsed.error);
-
-                // Select index 0 if array, or map directly if object dictionary
-                let target = Array.isArray(parsed) ? parsed : parsed;
-
+                // Explicit property check to handle exact incoming parameters smoothly
                 if (!target || (!target.lat && !target.lon)) {
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Location context dropped by core directory.</p>';
                     logToTerminal("Trace complete. Target context unmatched.");
