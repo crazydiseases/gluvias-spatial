@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v13.0</title>
+    <title>Spatial Intercept Core v14.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -26,15 +26,15 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT BASECORE v13</div>
+        <div class="deck-title">// SPATIAL INTERCEPT DIRECT v14</div>
         <div class="search-container">
-            <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeGeocodeSearch()">
-            <button onclick="executeGeocodeSearch()">SEEK</button>
+            <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
+            <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">Core base map restored. System ready.</p>
+            <p style="font-size: 11px; color: #71717a;">Direct browser routing active. Proxy bypassed.</p>
         </div>
-        <div id="debugWindow">[SYSTEM READY] V13 Base Restoration Complete.</div>
+        <div id="debugWindow">[SYSTEM READY] V14 Direct Client Uplink Standby.</div>
     </div>
 
     <div id="map"></div>
@@ -44,7 +44,7 @@
             const logger = document.getElementById('debugWindow');
             if (logger) {
                 const time = new Date().toISOString().split('T').slice(0, 8);
-                logger.innerText += `\n${time} [CORE] ${msg}`;
+                logger.innerText += `\n${time} [CLIENT] ${msg}`;
                 logger.scrollTop = logger.scrollHeight;
             }
         }
@@ -54,12 +54,12 @@
         const MAPTILER_KEY = "PASTE_YOUR_MAPTILER_API_KEY_HERE";
         // =========================================================
 
-        // --- RELIABLE FALLBACK STANDARD BASEMAP ---
+        // --- STABLE STANDARD OPENSTREETMAP BASE ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-            maxZoom: 19, attribution: '© OpenStreetMap contributors'
+            maxZoom: 19, attribution: '© OpenStreetMap'
         });
 
-        // --- HISTORICAL AND ALTERNATIVE TILES LINKED BY KEY ---
+        // --- AUTHENTIC HISTORICAL MAP TILING SOURCES ---
         const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire10k1900/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
@@ -68,29 +68,29 @@
             minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
 
-        // --- INITIALIZE MAP ON THE WORKING BASE LAYER ---
+        // --- INITIALIZE MAP ON RELIABLE MODERN LAYER ---
         const map = L.map('map', {
             center: [50.26055, -5.05336], zoom: 14, layers: [modernOSM] 
         });
         
         let activeMarker = null;
 
-        // --- HM LAND REGISTRY WMS (STABLE ATTRIBUTES) ---
-        const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
+        // --- RESTORED LAND REGISTRY INTERFACE ---
+        const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows', {
             layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
             transparent: true,
             version: '1.3.0',
-            crs: L.CRS.EPSG4326,
+            crs: L.CRS.EPSG4326, 
             attribution: 'Contains HM Land Registry data © Crown copyright',
             maxZoom: 22,
-            opacity: 0.65
+            opacity: 0.70
         }).addTo(map);
 
-        // --- SIMPLIFIED RE-ALIGNMENT LAYER CONTROLLER ---
+        // --- LAYER PANEL SELECTOR ---
         const baseMaps = {
             "Modern Base Map (Standard)": modernOSM,
-            "NLS Historic Six-Inch (1888-1913)": nlsSixInch,
+            "NLS Historic Detailed Six-Inch (1888-1913)": nlsSixInch,
             "NLS Post-War One-Inch (1955-1961)": nlsPostWar
         };
 
@@ -100,46 +100,40 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // Map monitor loop
+        // Map rendering watcher
         map.on('moveend', function() {
             if (map.hasLayer(landRegistryWMS) && map.getZoom() < 16) {
                 logToTerminal("NOTICE: Land Registry lines require Zoom Level 16+ to render.");
             }
         });
 
-        // --- RE-BUILT FAILSAFE SEARCH LOOP ---
-        async function executeGeocodeSearch() {
+        // --- FAILSAFE BROWSER DIRECT SEARCH ENGINE ---
+        async function executeDirectGeocode() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
-            logToTerminal(`Searching directory for: "${query}"`);
+            logToTerminal(`Direct routing search request: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Processing data blocks...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Contacting global spatial array...</p>';
 
             try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&_cb=${Date.now()}`);
-                let rawData = await response.json();
-                
-                // Deep clean raw serialization errors natively
-                while (typeof rawData === 'string') {
-                    if (rawData.startsWith('"') && rawData.endsWith('"')) {
-                        rawData = rawData.slice(1, -1);
-                    }
-                    rawData = JSON.parse(rawData);
-                }
+                // Queries the open public API directly to bypass python script errors
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`);
+                const data = await response.json();
 
-                let target = Array.isArray(rawData) ? rawData : rawData;
-
-                if (!target || (!target.lat && !target.latitude)) {
-                    logToTerminal("ERROR: Backend structure returned invalid lat/lon arrays.");
+                if (!data || data.length === 0) {
+                    logToTerminal("FAILED: Location drops out of global index entries.");
                     sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
                     return;
                 }
 
-                let lat = Number(target.lat || target.latitude);
-                let lon = Number(target.lon || target.longitude);
+                const target = data;
+                let lat = Number(target.lat);
+                let lon = Number(target.lon);
 
                 logToTerminal(`SUCCESS: Extracted coordinates: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+                
+                // Set view straight to level 17 so property lines render instantly
                 map.setView([lat, lon], 17);
 
                 if (activeMarker) map.removeLayer(activeMarker);
@@ -147,14 +141,14 @@
 
                 sidebar.innerHTML = `
                     <div class="location-card">
-                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
-                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name || query}</p>
+                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED via DIRECT CONNECT]</strong>
+                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name}</p>
                         <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
                     </div>
                 `;
 
             } catch (err) {
-                logToTerminal(`Parsing Exception: ${err.message}`);
+                logToTerminal(`Direct Query Error: ${err.message}`);
                 sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
             }
         }
