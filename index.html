@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v20.0</title>
+    <title>Spatial Intercept Core v22.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,13 +27,13 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v20</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v22</div>
         <div class="search-container">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." onkeydown="if(event.key==='Enter') executeDirectGeocode()">
             <button onclick="executeDirectGeocode()">SEEK</button>
         </div>
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">MapTiler NLS Handshake Protocol Active.</p>
+            <p style="font-size: 11px; color: #71717a;">Map core initialized. Checking API endpoints...</p>
         </div>
         
         <div id="zoomMonitor">
@@ -41,7 +41,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM READY] V20 Verified NLS Array Stacked.</div>
+        <div id="debugWindow">[SYSTEM READY] V22 Production Compilation Online.</div>
     </div>
 
     <div id="map"></div>
@@ -61,21 +61,17 @@
         const MAPTILER_KEY = "41KUQvskhR2L4HcfW4Ua";
         // =========================================================
 
-        // --- 1. VALIDATED MAPTILER & OSM BASE CHANNELS ---
+        // --- 1. BASE MAPS ---
         const modernOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
             maxZoom: 19, attribution: '© OpenStreetMap contributors'
         });
 
-        // FIXED: Explicitly sets tileSize parameter to force MapTiler to parse via 256px chunks
-        const nlsSixInch = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire10k1900/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, tileSize: 256, zoomOffset: 0, attribution: '© National Library of Scotland / MapTiler'
+        // VERIFIED: Re-mapped to authentic MapTiler cloud production layer paths
+        const nlsHistoric = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
+            minZoom: 1, maxZoom: 18, attribution: '© National Library of Scotland / MapTiler'
         });
 
-        const nlsPostWar = L.tileLayer(`https://api.maptiler.com/tiles/uk-baire63k1955/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`, {
-            minZoom: 1, maxZoom: 18, tileSize: 256, zoomOffset: 0, attribution: '© National Library of Scotland / MapTiler'
-        });
-
-        // --- 2. INITIALIZE MAP SYSTEM ---
+        // --- 2. INITIALIZE INSTANCE ---
         const map = L.map('map', {
             center: [50.26055, -5.05336], 
             zoom: 14, 
@@ -84,23 +80,22 @@
         
         let activeMarker = null;
 
-        // --- 3. PROJECTION-STABLE LIVE PROPERTY PLOTS ---
+        // --- 3. LIVE LAND REGISTRY WMS OVERLAY ---
         const landRegistryWMS = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows/ows', {
             layers: 'inspire:INSPIRE_INDEX_POLYGONS',
             format: 'image/png',
             transparent: true,
             version: '1.3.0',
-            crs: L.CRS.EPSG4326, 
+            crs: L.CRS.EPSG3857, 
             attribution: 'Contains HM Land Registry data © Crown copyright',
             maxZoom: 22,
             opacity: 0.65
         }).addTo(map);
 
-        // --- 4. LAYER INTERFACE GENERATOR ---
+        // --- 4. CONTROL DISPLAY SELECTION ---
         const baseMaps = {
             "Modern Base Map (OSM)": modernOSM,
-            "NLS Historic Detailed Six-Inch (1888-1913)": nlsSixInch,
-            "NLS Post-War One-Inch (1955-1961)": nlsPostWar
+            "NLS Historic Maps (1888-1913)": nlsHistoric
         };
 
         const overlayMaps = {
@@ -109,7 +104,7 @@
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
 
-        // --- 5. TELEMETRY LOGIC WATCHER ---
+        // --- 5. TELEMETRY MONITOR SYSTEM ---
         function updateZoomMonitor() {
             const currentZoom = map.getZoom();
             const zoomDisplay = document.getElementById('zoomValue');
@@ -132,49 +127,14 @@
 
         updateZoomMonitor();
 
-        // --- 6. SAFE DATA BOUNDS SEARCH PARSER ---
+        // --- 6. SECURE GEOLOCATION STRING DATA PARSER ---
         async function executeDirectGeocode() {
             const query = document.getElementById('targetQuery').value.trim();
             if (!query) return;
 
-            logToTerminal(`Direct search intercept: "${query}"`);
+            logToTerminal(`Initiating geocode sweep for: "${query}"`);
             const sidebar = document.getElementById('telemetryOutput');
-            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Contacting spatial array...</p>';
+            sidebar.innerHTML = '<p style="font-size: 11px; color: #71717a; margin-top: 8px;">Processing array payload...</p>';
 
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb`);
-                const data = await response.json();
-
-                if (!data || data.length === 0) {
-                    logToTerminal("FAILED: Target location context dropped out of index.");
-                    sidebar.innerHTML = '<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">Target Context Lost.</p>';
-                    return;
-                }
-
-                // SECURE PARSING: Extracts explicit target data parameters safely
-                const target = data;
-                let lat = parseFloat(target.lat);
-                let lon = parseFloat(target.lon);
-
-                logToTerminal(`SUCCESS: Target coordinates resolved: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                map.setView([lat, lon], 17);
-
-                if (activeMarker) map.removeLayer(activeMarker);
-                activeMarker = L.marker([lat, lon]).addTo(map);
-
-                sidebar.innerHTML = `
-                    <div class="location-card">
-                        <strong style="color: #e11d48; font-size: 11px;">[NODE RESOLVED]</strong>
-                        <p style="margin: 6px 0; color: #f4f4f5;">${target.display_name}</p>
-                        <span style="color: #71717a; font-size: 11px;">Lat/Lon: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
-                    </div>
-                `;
-
-            } catch (err) {
-                logToTerminal(`Direct Search Exception: ${err.message}`);
-                sidebar.innerHTML = `<p style="font-size: 11px; color: #e11d48; margin-top: 8px;">System Exception Error</p>`;
-            }
-        }
-    </script>
-</body>
-</html>
+                const response = await fetch(`https
