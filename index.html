@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Intercept Core v41.0</title>
+    <title>Spatial Intercept Core v42.0</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -27,7 +27,7 @@
 <body>
 
     <div id="controlDeck">
-        <div class="deck-title">// SPATIAL INTERCEPT v41</div>
+        <div class="deck-title">// SPATIAL INTERCEPT v42</div>
         
         <form class="search-container" onsubmit="executeDirectGeocode(event)">
             <input type="text" id="targetQuery" placeholder="Enter postcode or town..." autocomplete="off">
@@ -35,7 +35,7 @@
         </form>
         
         <div id="telemetryOutput">
-            <p style="font-size: 11px; color: #71717a;">All 11 Map Arrays Active. Parsing validations clean.</p>
+            <p style="font-size: 11px; color: #71717a;">INSPIRE Index Polygons database linked. Toggle property limits inside the right layer deck.</p>
         </div>
         
         <div id="zoomMonitor">
@@ -43,7 +43,7 @@
             <span id="zoomValue" style="color: #e11d48;">Z-LVL --</span>
         </div>
         
-        <div id="debugWindow">[SYSTEM ONLINE] Map stacks initialized successfully.</div>
+        <div id="debugWindow">[SYSTEM ONLINE] Land Registry WMS pipeline active.</div>
     </div>
 
     <div id="map"></div>
@@ -52,7 +52,7 @@
         function logToTerminal(msg) {
             const logger = document.getElementById('debugWindow');
             if (logger) {
-                const time = new Date().toISOString().split('T').slice(0, 8);
+                const time = new Date().toISOString().split('T')[1].slice(0, 8);
                 logger.innerText += `\n${time} [CLIENT] ${msg}`;
                 logger.scrollTop = logger.scrollHeight;
             }
@@ -81,7 +81,7 @@
             maxZoom: 19, attribution: 'Historic Imagery Archive Data'
         });
 
-        // --- 3. ALL HISTORICAL MAP LAYERS ---
+        // --- 3. HISTORICAL MAP LAYERS ---
         const nlsMultiScale = L.tileLayer(`https://api.maptiler.com/tiles/uk-osgb1888/{z}/{x}/{y}.jpg?key=${MAPTILER_KEY}`, {
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
@@ -110,16 +110,26 @@
             minZoom: 1, maxZoom: 18, tileSize: 512, zoomOffset: -1, crossOrigin: true, attribution: '© NLS / MapTiler'
         });
 
-        // --- 4. MAP INITIALIZATION ENGINE ---
+        // --- 4. HM LAND REGISTRY INSPIRE GEOSPATIAL WMS STREAM ---
+        // Note: The Land Registry WMS only renders vectors when zoomed in close (typically Zoom Level 15+)
+        const landRegistryINSPIRE = L.tileLayer.wms('https://inspire.landregistry.gov.uk/inspire/ows', {
+            layers: 'INSPIREIndexPolygons',
+            format: 'image/png',
+            transparent: true,
+            version: '1.3.0',
+            attribution: 'Contains HM Land Registry data © Crown copyright'
+        });
+
+        // --- 5. MAP INITIALIZATION ENGINE ---
         const map = L.map('map', {
             center: [50.26055, -5.05336], 
             zoom: 14, 
-            layers: [modernOSM]
+            layers: [modernOSM, landRegistryINSPIRE] // Loaded as a default overlay active layer
         });
         
         let activeMarker = null;
 
-        // --- 5. COMPREHENSIVE LAYER CONTROL PANEL ---
+        // --- 6. COMPREHENSIVE LAYER CONTROL PANEL ---
         const baseMaps = {
             "Modern Street Map (OSM)": modernOSM,
             "Modern High-Res Satellite": modernSatellite,
@@ -134,21 +144,29 @@
             "NLS Post-War 7th Series (1955)": nlsPostWar
         };
 
-        L.control.layers(baseMaps, {}, { collapsed: false }).addTo(map);
+        const overlayMaps = {
+            "HMLR INSPIRE Boundaries": landRegistryINSPIRE
+        };
 
-        // --- 6. TELEMETRY MONITOR SYSTEM ---
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
+
+        // --- 7. TELEMETRY MONITOR SYSTEM ---
         function updateZoomMonitor() {
             const currentZoom = map.getZoom();
             const zoomDisplay = document.getElementById('zoomValue');
             if (zoomDisplay) {
                 zoomDisplay.innerHTML = `Z-LVL ${currentZoom}`;
             }
+            // Warning prompt inside log terminal to guide map views
+            if (currentZoom < 15 && map.hasLayer(landRegistryINSPIRE)) {
+                logToTerminal("INSPIRE Warning: Zoom level too low. Zoom to Z-LVL 15+ to view boundary shapes.");
+            }
         }
         map.on('zoomend', updateZoomMonitor);
         map.on('moveend', updateZoomMonitor);
         updateZoomMonitor();
 
-        // --- 7. CLEAN DIRECT EXTRACTION ENGINE ---
+        // --- 8. DIRECT SEARCH SELECTION ---
         async function executeDirectGeocode(event) {
             if (event) event.preventDefault();
 
@@ -173,8 +191,7 @@
                     return;
                 }
 
-                // Direct extraction bypasses property string verification loops
-                const target = data;
+                const target = data[0];
                 let lat = parseFloat(target.lat);
                 let lon = parseFloat(target.lon);
 
@@ -185,7 +202,7 @@
                 }
 
                 logToTerminal(`SUCCESS: Target coordinated at: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-                map.setView([lat, lon], 15);
+                map.setView([lat, lon], 16); // Sets standard entry zoom directly to 16 so boundaries load instantly
 
                 if (activeMarker) map.removeLayer(activeMarker);
                 activeMarker = L.marker([lat, lon]).addTo(map);
